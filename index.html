@@ -8,7 +8,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <script>
 function toggleKeyVisibility() {
   const inp = document.getElementById('apiKeyInput');
   const btn = document.getElementById('eyeBtn');
@@ -240,6 +249,41 @@ function toggleKeyVisibility() {
   
     .provider-btn.active{background:var(--color-primary-highlight);border-color:var(--color-primary)!important;color:var(--color-primary)}
     .provider-btn:hover:not(.active){background:var(--color-surface-offset)}
+
+    /* Sample pills */
+    .sample-row{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-1)}
+    .sample-pill{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);font-size:var(--text-xs);font-weight:500;border-radius:var(--radius-full);border:1px solid var(--color-border);background:var(--color-surface-2);color:var(--color-text-muted);cursor:pointer}
+    .sample-pill:hover{border-color:var(--color-primary);color:var(--color-primary);background:var(--color-primary-highlight)}
+    .sample-pill svg{width:12px;height:12px}
+
+    /* Upload error */
+    .upload-error{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-error-highlight);border:1px solid oklch(from var(--color-error) l c h / .25);border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--color-text)}
+    .upload-error svg{width:14px;height:14px;color:var(--color-error);flex-shrink:0;margin-top:1px}
+
+    .uploaded-file.parsing{background:var(--color-primary-highlight);border-color:oklch(from var(--color-primary) l c h / .25)}
+    .uploaded-file.parsing svg{color:var(--color-primary)}
+
+    /* Export dropdown */
+    .export-wrap{position:relative}
+    .export-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:200px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);box-shadow:var(--shadow-md);padding:var(--space-2);z-index:50;display:none}
+    .export-menu.open{display:block}
+    .export-menu button{width:100%;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);color:var(--color-text);border-radius:var(--radius-sm);background:none;text-align:left}
+    .export-menu button:hover{background:var(--color-surface-offset)}
+    .export-menu button svg{width:14px;height:14px;color:var(--color-text-muted)}
+
+    /* Structured memo sections */
+    .memo-section h4{font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-2);letter-spacing:-.005em}
+    .memo-section p{font-size:var(--text-sm);line-height:1.65;color:var(--color-text)}
+    .memo-list{display:flex;flex-direction:column;gap:var(--space-2)}
+    .memo-list-item{display:flex;gap:var(--space-3);font-size:var(--text-sm);line-height:1.55;padding:var(--space-2) 0}
+    .memo-list-item::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--color-primary);flex-shrink:0;margin-top:8px}
+    .question-item{display:flex;gap:var(--space-3);font-size:var(--text-sm);padding:var(--space-3) var(--space-4);background:var(--color-surface-offset);border-radius:var(--radius-md);line-height:1.55}
+    .question-num{font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-primary);font-weight:600;flex-shrink:0;min-width:24px}
+
+    /* Toast */
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);box-shadow:var(--shadow-md);display:flex;align-items:center;gap:var(--space-3);z-index:200;animation:toastIn .25s ease-out}
+    .toast svg{width:14px;height:14px;color:var(--color-success)}
+    @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
@@ -284,8 +328,15 @@ function toggleKeyVisibility() {
       <span class="topbar-crumb">Workspace ›</span>
       <span class="topbar-title">Due Diligence Summarizer</span>
       <span class="badge" id="geminiBadge" style="margin-left:var(--space-3);">AI-Powered</span>
-      <div style="margin-left:auto;display:flex;gap:var(--space-2);">
-        <button class="btn btn-ghost btn-sm" id="exportBtn" style="display:none;" onclick="exportSummary()"><i data-lucide="download"></i> Export PDF</button>
+      <div style="margin-left:auto;display:flex;gap:var(--space-2);align-items:center;">
+        <div class="export-wrap" id="exportWrap" style="display:none;">
+          <button class="btn btn-ghost btn-sm" id="exportBtn" onclick="toggleExportMenu(event)"><i data-lucide="download"></i> Export <i data-lucide="chevron-down" style="width:12px;height:12px;"></i></button>
+          <div class="export-menu" id="exportMenu">
+            <button onclick="exportMarkdown()"><i data-lucide="file-text"></i> Download as Markdown</button>
+            <button onclick="exportPDF()"><i data-lucide="file-down"></i> Download as PDF</button>
+            <button onclick="copyMarkdownToClipboard()"><i data-lucide="clipboard-copy"></i> Copy to clipboard</button>
+          </div>
+        </div>
         <button class="btn btn-ghost btn-sm" onclick="openSettings()"><i data-lucide="settings"></i> Settings</button>
         <button class="btn btn-ghost btn-sm" onclick="resetAll()"><i data-lucide="refresh-ccw"></i> New Analysis</button>
       </div>
@@ -305,15 +356,21 @@ function toggleKeyVisibility() {
           <div class="upload-zone" id="uploadZone" onclick="triggerUpload()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event)">
             <div class="upload-icon"><i data-lucide="upload-cloud" style="width:36px;height:36px;"></i></div>
             <p><span>Click to upload</span> or drag & drop</p>
-            <p class="hint">PDF, DOCX, TXT supported</p>
+            <p class="hint">PDF, DOCX, TXT · 15MB max</p>
           </div>
           <div id="uploadedFile" style="display:none;"></div>
-          <input type="file" id="fileInput" accept=".pdf,.docx,.txt" style="display:none;" onchange="handleFileUpload(this)"/>
+          <div id="uploadError" style="display:none;"></div>
+          <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md" style="display:none;" onchange="handleFileUpload(this)"/>
           <div class="or-row"><div class="divider"></div><span>or</span><div class="divider"></div></div>
           <div class="form-group">
             <label class="form-label">Paste CIM / Document Text</label>
             <textarea class="form-textarea" id="docText" placeholder="Paste CIM text, earnings call transcript, or deal memo here..."></textarea>
-            <button class="sample-link" onclick="loadSample()">↓ Load sample CIM — TechCo Inc. Growth Equity</button>
+            <div class="form-label" style="margin-top:var(--space-2);">Sample Deal Scenarios</div>
+            <div class="sample-row">
+              <button class="sample-pill" onclick="loadSample('saas')"><i data-lucide="cloud"></i> SaaS Growth Equity</button>
+              <button class="sample-pill" onclick="loadSample('marketplace')"><i data-lucide="shopping-bag"></i> Consumer Marketplace</button>
+              <button class="sample-pill" onclick="loadSample('healthcare')"><i data-lucide="stethoscope"></i> Healthcare Services</button>
+            </div>
           </div>
           <div class="divider"></div>
           <div class="form-group">
@@ -354,8 +411,10 @@ function toggleKeyVisibility() {
       <div class="output-panel">
         <div class="tab-bar" id="tabBar" style="display:none;">
           <button class="tab-btn active" onclick="switchTab(this,'overview')">Overview</button>
+          <button class="tab-btn" onclick="switchTab(this,'memo')">Full Memo</button>
           <button class="tab-btn" onclick="switchTab(this,'risks')">Risk Flags</button>
           <button class="tab-btn" onclick="switchTab(this,'gaps')">Data Gaps</button>
+          <button class="tab-btn" onclick="switchTab(this,'questions')">Diligence Questions</button>
           <button class="tab-btn" onclick="switchTab(this,'nextsteps')">Next Steps</button>
         </div>
         <div class="output-body" id="outputBody">
@@ -396,29 +455,267 @@ setTimeout(()=>{ if(typeof setProviderUI==='function') setProviderUI('groq'); },
   });
 })();
 
-// File upload
+// ── File upload + parsing ───────────────────────────────────────────────
+const MAX_FILE_BYTES = 15 * 1024 * 1024; // 15 MB
+const SUPPORTED_EXT = ['pdf','docx','txt','md'];
+
 function triggerUpload(){document.getElementById('fileInput').click();}
 function dragOver(e){e.preventDefault();document.getElementById('uploadZone').classList.add('drag-over');}
 function dragLeave(){document.getElementById('uploadZone').classList.remove('drag-over');}
 function handleDrop(e){e.preventDefault();dragLeave();const f=e.dataTransfer.files[0];if(f)showFile(f);}
 function handleFileUpload(i){if(i.files[0])showFile(i.files[0]);}
+
+function formatBytes(b){
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(0) + ' KB';
+  return (b/1024/1024).toFixed(1) + ' MB';
+}
+
+function showUploadError(msg){
+  const el = document.getElementById('uploadError');
+  el.innerHTML = `<div class="upload-error"><i data-lucide="alert-circle"></i><span>${msg}</span></div>`;
+  el.style.display = 'block';
+  lucide.createIcons();
+  setTimeout(()=>{ el.style.display='none'; el.innerHTML=''; }, 6000);
+}
+
+function clearUploadError(){
+  const el = document.getElementById('uploadError');
+  el.style.display='none'; el.innerHTML='';
+}
+
 function showFile(f){
+  clearUploadError();
+  const ext = (f.name.split('.').pop()||'').toLowerCase();
+  if (!SUPPORTED_EXT.includes(ext)) {
+    showUploadError(`Unsupported file type ".${ext}". Use PDF, DOCX, TXT, or MD — or paste raw text below.`);
+    document.getElementById('fileInput').value='';
+    return;
+  }
+  if (f.size > MAX_FILE_BYTES) {
+    showUploadError(`File is ${formatBytes(f.size)} — max is 15 MB. Trim or paste relevant excerpts instead.`);
+    document.getElementById('fileInput').value='';
+    return;
+  }
+  if (f.size === 0) {
+    showUploadError('File appears to be empty.');
+    document.getElementById('fileInput').value='';
+    return;
+  }
   document.getElementById('uploadZone').style.display='none';
-  const sz=(f.size/1024).toFixed(0)+' KB';
-  document.getElementById('uploadedFile').innerHTML=`<div class="uploaded-file"><i data-lucide="file-check-2"></i><span class="uploaded-file-name">${f.name}</span><span class="uploaded-file-size">${sz}</span><button style="padding:2px;color:var(--color-text-muted)" onclick="removeFile()"><i data-lucide="x" style="width:13px;height:13px;"></i></button></div>`;
+  renderUploadedFile(f, true); // parsing state
+  parseFile(f).then(text => {
+    if (!text || !text.trim()) {
+      showUploadError('No readable text found in this file. It may be a scanned image or encrypted PDF — try pasting the text manually.');
+      removeFile();
+      return;
+    }
+    document.getElementById('docText').value = text;
+    if (!document.getElementById('companyName').value) {
+      document.getElementById('companyName').value = f.name.replace(/\.[^.]+$/,'');
+    }
+    renderUploadedFile(f, false);
+  }).catch(err => {
+    console.error('Parse error:', err);
+    showUploadError(`Couldn't parse ${ext.toUpperCase()}: ${err.message || 'unknown error'}. Try pasting the text manually.`);
+    removeFile();
+  });
+}
+
+function renderUploadedFile(f, parsing){
+  const sz = formatBytes(f.size);
+  const icon = parsing ? 'loader' : 'file-check-2';
+  const status = parsing ? '<span class="uploaded-file-size">Parsing…</span>' : `<span class="uploaded-file-size">${sz} · parsed</span>`;
+  const cls = parsing ? 'uploaded-file parsing' : 'uploaded-file';
+  const iconStyle = parsing ? 'style="animation:spin .8s linear infinite;"' : '';
+  document.getElementById('uploadedFile').innerHTML =
+    `<div class="${cls}"><i data-lucide="${icon}" ${iconStyle}></i><span class="uploaded-file-name">${f.name}</span>${status}<button style="padding:2px;color:var(--color-text-muted)" onclick="removeFile()" aria-label="Remove file"><i data-lucide="x" style="width:13px;height:13px;"></i></button></div>`;
   document.getElementById('uploadedFile').style.display='block';
-  if(!document.getElementById('companyName').value)document.getElementById('companyName').value=f.name.replace(/\.[^.]+$/,'');
   lucide.createIcons();
 }
-function removeFile(){document.getElementById('uploadZone').style.display='';document.getElementById('uploadedFile').style.display='none';document.getElementById('fileInput').value='';lucide.createIcons();}
+
+async function parseFile(f){
+  const ext = (f.name.split('.').pop()||'').toLowerCase();
+  if (ext === 'txt' || ext === 'md') {
+    return await f.text();
+  }
+  if (ext === 'docx') {
+    if (typeof mammoth === 'undefined') throw new Error('DOCX parser failed to load');
+    const buf = await f.arrayBuffer();
+    const result = await mammoth.extractRawText({arrayBuffer: buf});
+    return result.value || '';
+  }
+  if (ext === 'pdf') {
+    if (typeof pdfjsLib === 'undefined') throw new Error('PDF parser failed to load');
+    const buf = await f.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+    const maxPages = Math.min(pdf.numPages, 120);
+    const parts = [];
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      parts.push(content.items.map(it => it.str).join(' '));
+    }
+    let text = parts.join('\n\n');
+    if (pdf.numPages > 120) text += `\n\n[Note: only first 120 of ${pdf.numPages} pages parsed]`;
+    return text;
+  }
+  throw new Error('Unsupported file type');
+}
+
+function removeFile(){
+  document.getElementById('uploadZone').style.display='';
+  document.getElementById('uploadedFile').style.display='none';
+  document.getElementById('uploadedFile').innerHTML='';
+  document.getElementById('fileInput').value='';
+  clearUploadError();
+  lucide.createIcons();
+}
 function toggleFocus(el){el.classList.toggle('selected');}
 
-// Sample CIM
-function loadSample(){
-  document.getElementById('docText').value=`CONFIDENTIAL INFORMATION MEMORANDUM\nTechCo Inc. — B2B SaaS Workflow Automation\n\nEXECUTIVE SUMMARY\nTechCo Inc. is a high-growth B2B SaaS company offering an AI-powered workflow automation platform to mid-market enterprises. The Company seeks a $120M growth equity investment.\n\nFINANCIAL HIGHLIGHTS\n- ARR: $42M (FY2025), up 68% YoY from $25M (FY2024)\n- Gross Margin: 74%\n- Net Revenue Retention (NRR): 118%\n- CAC Payback Period: 16 months\n- Burn Rate: $1.4M/month; 22-month runway\n- EBITDA: -$8M\n- Top 10 customers represent 38% of ARR — concentration risk noted\n\nMARKET OPPORTUNITY\nGlobal workflow automation market projected at $26B by 2028 (CAGR: 23%).\n\nCOMPETITIVE POSITIONING\n- AutoFlow AI engine (patent pending)\n- 140+ pre-built integrations (Salesforce, SAP, Workday)\n- SOC 2 Type II, HIPAA, GDPR compliance\n- Competition: Microsoft Copilot, Google Workspace AI\n\nMANAGEMENT TEAM\nCEO: Jane Chen — ex-Salesforce VP Product, Harvard MBA\nCTO: Marcus Webb — ex-Google AI Research, holds 3 key patents (key-man risk)\nCFO: Sarah Park — Big 4, IPO experience\n\nRISKS\n- Customer concentration: top 3 = 22% of ARR\n- Sales cycle elongation in enterprise (avg 94 days Q4 2025)\n- AWS infrastructure dependency, no multi-cloud strategy\n- Key-man risk on CTO patents\n\nDATA GAPS\n- Cohort-level churn data not provided\n- Unit economics by vertical not disclosed\n- International revenue pipeline unclear`;
-  document.getElementById('companyName').value='TechCo Inc. — Growth Equity ($120M)';
-  document.getElementById('dealType').value='growth_equity';
-  document.querySelectorAll('.focus-tag').forEach(t=>t.classList.add('selected'));
+// Sample deal scenarios
+const SAMPLES = {
+  saas: {
+    company: 'TechCo Inc. — Growth Equity ($120M)',
+    dealType: 'growth_equity',
+    text: `CONFIDENTIAL INFORMATION MEMORANDUM
+TechCo Inc. — B2B SaaS Workflow Automation
+
+EXECUTIVE SUMMARY
+TechCo Inc. is a high-growth B2B SaaS company offering an AI-powered workflow automation platform to mid-market enterprises. The Company seeks a $120M growth equity investment to expand internationally and accelerate enterprise GTM.
+
+FINANCIAL HIGHLIGHTS
+- ARR: $42M (FY2025), up 68% YoY from $25M (FY2024)
+- Gross Margin: 74%
+- Net Revenue Retention (NRR): 118%
+- CAC Payback Period: 16 months
+- Burn Rate: $1.4M/month; 22-month runway
+- EBITDA: -$8M
+- Top 10 customers represent 38% of ARR — concentration risk noted
+
+MARKET OPPORTUNITY
+Global workflow automation market projected at $26B by 2028 (CAGR: 23%).
+
+COMPETITIVE POSITIONING
+- AutoFlow AI engine (patent pending)
+- 140+ pre-built integrations (Salesforce, SAP, Workday)
+- SOC 2 Type II, HIPAA, GDPR compliance
+- Competition: Microsoft Copilot, Google Workspace AI
+
+MANAGEMENT TEAM
+CEO: Jane Chen — ex-Salesforce VP Product, Harvard MBA
+CTO: Marcus Webb — ex-Google AI Research, holds 3 key patents (key-man risk)
+CFO: Sarah Park — Big 4, IPO experience
+
+RISKS
+- Customer concentration: top 3 = 22% of ARR
+- Sales cycle elongation in enterprise (avg 94 days Q4 2025)
+- AWS infrastructure dependency, no multi-cloud strategy
+- Key-man risk on CTO patents
+
+DATA GAPS
+- Cohort-level churn data not provided
+- Unit economics by vertical not disclosed
+- International revenue pipeline unclear`
+  },
+  marketplace: {
+    company: 'Loomly Marketplace — Series C ($85M)',
+    dealType: 'vc_series',
+    text: `CONFIDENTIAL INVESTOR MEMO
+Loomly — Consumer Peer-to-Peer Resale Marketplace
+
+EXECUTIVE SUMMARY
+Loomly operates a mobile-first peer-to-peer resale marketplace for premium fashion, with 4.2M monthly active users across the US and UK. The Company is raising an $85M Series C to fund category expansion and accelerate paid acquisition.
+
+FINANCIAL HIGHLIGHTS
+- GMV: $310M (TTM), up 52% YoY from $204M
+- Net Revenue: $48M (take rate ~15.5%), up 58% YoY
+- Gross Margin: 68%
+- Contribution margin per order: $4.20 (vs. $2.10 prior year)
+- Burn Rate: $2.6M/month; 14-month runway pre-raise
+- Buyer cohort repeat rate: 47% within 90 days
+- CAC: $22; LTV: $96 (LTV/CAC = 4.4x)
+
+MARKET OPPORTUNITY
+Global secondhand apparel market projected at $350B by 2028 (CAGR: 12%). Resale outpacing broader apparel growth by ~5x.
+
+COMPETITIVE POSITIONING
+- Differentiated AI-driven listing tool (avg listing time 38 seconds vs. 4+ minutes for competitors)
+- 92% seller satisfaction (vs. 71% category average)
+- Competition: Poshmark, Depop, Vinted (well-capitalized incumbents)
+- No defensible IP filed to date
+
+MANAGEMENT TEAM
+CEO: Priya Raman — founder, ex-Instacart product lead
+COO: David Kim — ex-Uber Eats ops, 8 yrs marketplace scaling
+CFO position currently vacant — interim from advisory firm
+
+RISKS
+- Heavy paid acquisition reliance (Meta + TikTok) — CAC inflation risk
+- Marketplace liquidity concentrated in 3 US metros (NYC, LA, SF = 61% of GMV)
+- Trust & safety: counterfeit dispute rate climbing (1.8% Q3, 2.4% Q4)
+- Take rate compression risk as larger competitors push lower fees
+
+DATA GAPS
+- Cohort retention beyond 12 months not provided
+- True contribution margin including returns processing not validated
+- International unit economics (UK launch) not separately disclosed`
+  },
+  healthcare: {
+    company: 'Meridian Health Partners — PE Buyout ($240M EV)',
+    dealType: 'pe_buyout',
+    text: `CONFIDENTIAL INFORMATION MEMORANDUM
+Meridian Health Partners — Multi-Site Outpatient Specialty Services
+
+EXECUTIVE SUMMARY
+Meridian Health Partners operates 38 outpatient orthopedic and sports-medicine clinics across the Southeast US, serving ~420,000 patient visits annually. The Company is being marketed for a $240M EV LBO transaction (8.5x trailing EBITDA).
+
+FINANCIAL HIGHLIGHTS
+- Revenue: $186M (FY2025), up 14% YoY from $163M
+- EBITDA: $28.2M (15.2% margin), up from $22M
+- Gross Margin: 41% (mature healthcare services range)
+- Same-clinic revenue growth: 6.8%
+- Net debt: $42M; proposed leverage 5.5x at close
+- Payer mix: 62% commercial, 28% Medicare, 10% self-pay
+
+MARKET OPPORTUNITY
+US outpatient orthopedic services projected at $58B by 2027 (CAGR: 6%). Aging demographic and shift from inpatient driving structural tailwind.
+
+COMPETITIVE POSITIONING
+- Top 3 market share in 6 of 9 MSAs served
+- Proprietary scheduling and revenue-cycle platform (in-house)
+- HIPAA and HITRUST CSF certified
+- Competition: hospital systems acquiring physician practices; PE-backed roll-ups (US Orthopedic Partners, OrthoOne)
+
+MANAGEMENT TEAM
+CEO: Dr. Robert Hayes, MD — founder, 22 yrs clinical + operating
+CFO: Lisa Tran — ex-HCA divisional CFO
+Chief Medical Officer: Dr. Anika Patel — board-certified, joined 2023
+
+RISKS
+- Reimbursement risk: CMS proposed 2026 rate cuts to specialty services (~3-5%)
+- Physician retention: 4 senior partners eligible to retire within 36 months
+- Reliance on 2 commercial payers for 41% of revenue — contract renewal cycle 2026
+- Integration risk on 6 recently acquired clinics (closed last 18 months)
+- Regulatory: state-level Certificate of Need restrictions in 3 markets
+
+DATA GAPS
+- De-identified patient cohort outcomes data not provided
+- Same-store unit economics by clinic vintage not disclosed
+- Detailed payer-contract terms (rate cards) withheld pending NDA upgrade
+- Quality-of-earnings adjustments to EBITDA not yet validated`
+  }
+};
+
+function loadSample(key){
+  key = key || 'saas';
+  const s = SAMPLES[key];
+  if (!s) return;
+  document.getElementById('docText').value = s.text;
+  document.getElementById('companyName').value = s.company;
+  document.getElementById('dealType').value = s.dealType;
+  document.querySelectorAll('.focus-tag').forEach(t => t.classList.add('selected'));
+  removeFile();
   lucide.createIcons();
 }
 
@@ -515,6 +812,22 @@ function normalizeResult(parsed, sourceText) {
   parsed.score = finalScore;
   parsed.verdict = finalScore >= 75 ? 'proceed' : finalScore >= 55 ? 'caution' : 'risk';
 
+  // Normalize schema names — AI may return older keys; fill missing with sensible defaults
+  parsed.investmentHighlights = parsed.investmentHighlights || parsed.positives || [];
+  parsed.keyRisks = parsed.keyRisks || parsed.risks || [];
+  parsed.dataGaps = parsed.dataGaps || parsed.gaps || [];
+  parsed.revenueDrivers = parsed.revenueDrivers || [];
+  parsed.diligenceQuestions = parsed.diligenceQuestions || [];
+  parsed.nextSteps = parsed.nextSteps || [];
+  parsed.competitivePosition = parsed.competitivePosition || '';
+  parsed.executiveSummary = parsed.executiveSummary || parsed.verdictRationale || '';
+  parsed.recommendation = parsed.recommendation || '';
+
+  // back-compat aliases
+  parsed.positives = parsed.investmentHighlights;
+  parsed.risks = parsed.keyRisks;
+  parsed.gaps = parsed.dataGaps;
+
   return parsed;
 }
 
@@ -555,18 +868,22 @@ function buildPrompt(text, company, dealType) {
   const dtLabel = {pe_buyout:'PE Buyout / LBO', growth_equity:'Growth Equity', strategic_ma:'Strategic M&A', vc_series:'Venture Round', ipo_review:'IPO Review'}[dealType] || dealType;
   return `You are a senior M&A diligence analyst evaluating a ${dtLabel} deal for "${company}".
 
-Return ONLY a valid JSON object. No markdown fences, no explanation. Keys:
-- arrVal: string like "$42M" (include the $ and unit, e.g. M/B/K)
-- revenueGrowth: integer percentage (e.g. 68 means 68%), null if unknown
-- grossMargin: integer percentage (e.g. 74 means 74%), null if unknown
-- nrr: integer percentage (e.g. 118 means 118%), null if unknown
-- score: INTEGER 0-100 (75+=strong, 55-74=caution, <55=risk). Example: 78 NOT 0.78 NOT 7.8
-- verdict: "proceed" or "caution" or "risk"
-- verdictRationale: 1-2 sentence executive summary
-- positives: array of 3-5 specific strength strings
-- risks: array of 3-6 objects {t: "description", s: "risk"|"warning"|"neutral"}
-- gaps: array of 3-5 missing data point strings
-- nextSteps: array of 5-7 action strings in priority order
+Return ONLY a valid JSON object. No markdown fences, no explanation. Use these keys exactly:
+- arrVal: string like "$42M" (include $ and unit M/B/K), or "N/A"
+- revenueGrowth: integer percentage (e.g. 68), null if unknown
+- grossMargin: integer percentage (e.g. 74), null if unknown
+- nrr: integer percentage (e.g. 118), null if unknown
+- score: INTEGER 0-100 (75+=strong, 55-74=caution, <55=risk). Example: 78 NOT 0.78
+- verdict: "proceed" | "caution" | "risk"
+- executiveSummary: 3-5 sentence narrative paragraph synthesizing the deal thesis
+- investmentHighlights: array of 4-6 specific strength strings (with metrics where available)
+- revenueDrivers: array of 3-5 strings describing what's actually driving growth (segments, products, geos, motions)
+- keyRisks: array of 4-7 objects {t: "description with quantification where possible", s: "risk"|"warning"|"neutral"}
+- competitivePosition: 2-4 sentence narrative describing moat, competitors, and defensibility
+- dataGaps: array of 3-6 missing data points needed for full diligence
+- diligenceQuestions: array of 6-10 sharp questions to ask management (in priority order)
+- nextSteps: array of 5-7 concrete action strings in priority sequence
+- recommendation: 2-3 sentence recommendation paragraph (LOI / proceed with caveats / pass)
 
 DOCUMENT:
 ${text.substring(0, 22000)}`;
@@ -625,7 +942,7 @@ async function runAnalysis() {
   const dealType = document.getElementById('dealType').value;
   document.getElementById('analyzeBtn').disabled = true;
   document.getElementById('tabBar').style.display = 'none';
-  document.getElementById('exportBtn').style.display = 'none';
+  document.getElementById('exportWrap').style.display = 'none';
   showLoading();
   try {
     let parsed;
@@ -640,7 +957,7 @@ async function runAnalysis() {
     document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
     renderTab('overview');
     document.getElementById('analyzeBtn').disabled = false;
-    document.getElementById('exportBtn').style.display = '';
+    document.getElementById('exportWrap').style.display = '';
     lucide.createIcons();
   } catch (err) {
     document.getElementById('analyzeBtn').disabled = false;
@@ -667,7 +984,7 @@ function runAnalysis_legacy_unused(){
   const dealType=document.getElementById('dealType').value;
   document.getElementById('analyzeBtn').disabled=true;
   document.getElementById('tabBar').style.display='none';
-  document.getElementById('exportBtn').style.display='none';
+  document.getElementById('exportWrap').style.display='none';
   showLoading();
   setTimeout(()=>{
     result=analyze(text,company,dealType);
@@ -675,50 +992,143 @@ function runAnalysis_legacy_unused(){
     document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
     renderTab('overview');
     document.getElementById('analyzeBtn').disabled=false;
-    document.getElementById('exportBtn').style.display='';
+    document.getElementById('exportWrap').style.display='';
     lucide.createIcons();
   },3000);
 }
 
 function showLoading(){
-  const steps=['Parsing document structure...','Extracting financial signals...','Identifying risk flags...','Generating executive summary...'];
+  const steps=[
+    'Parsing document structure…',
+    'Extracting financial signals & metrics…',
+    'Identifying risk flags & data gaps…',
+    'Building competitive position view…',
+    'Generating diligence questions…',
+    'Composing memo & recommendations…'
+  ];
   document.getElementById('outputBody').innerHTML=`<div class="loading-state"><div class="spinner"></div><div class="loading-steps">${steps.map((s,i)=>`<div class="loading-step" id="ls${i}"><i data-lucide="circle" style="width:11px;height:11px;opacity:.3;"></i>${s}</div>`).join('')}</div></div>`;
   lucide.createIcons();
-  steps.forEach((_,i)=>setTimeout(()=>{const el=document.getElementById(`ls${i}`);if(el){el.classList.add('done');el.innerHTML=`<i data-lucide="check-circle" style="width:11px;height:11px;color:var(--color-success);"></i>${steps[i]}`;lucide.createIcons();}},i*700+500));
+  steps.forEach((_,i)=>setTimeout(()=>{const el=document.getElementById(`ls${i}`);if(el){el.classList.add('done');el.innerHTML=`<i data-lucide="check-circle" style="width:11px;height:11px;color:var(--color-success);"></i>${steps[i]}`;lucide.createIcons();}},i*550+400));
 }
 
 function analyze(text,company,dealType){
-  const arr=text.match(/ARR[:\s]+\$?([\d.]+[MBK]?)/i);
-  const growth=text.match(/(\d+)%\s*(YoY|year.over.year)/i);
-  const nrr=text.match(/NRR[:\s]+(\d+)%/i);
-  const gm=text.match(/[Gg]ross\s*[Mm]argin[:\s]+(\d+)%/i);
-  const g=growth?parseInt(growth[1]):null;
-  const n=nrr?parseInt(nrr[1]):null;
-  const m=gm?parseInt(gm[1]):null;
-  const score=Math.min(95,Math.max(40,(g&&g>50?25:g&&g>25?15:5)+(n&&n>115?20:n&&n>100?12:5)+(m&&m>70?20:m&&m>60?12:5)+20+(text.toLowerCase().includes('soc 2')||text.toLowerCase().includes('hipaa')?10:0)));
+  const tl = text.toLowerCase();
+  const arr=text.match(/ARR[:\s]+\$?([\d.]+\s*[MBKmb]?)/i);
+  const growth=text.match(/(\d+(?:\.\d+)?)%\s*(YoY|year.over.year)/i);
+  const nrr=text.match(/NRR[:\s]+(\d+(?:\.\d+)?)%/i);
+  const gm=text.match(/[Gg]ross\s*[Mm]argin[:\s]+(\d+(?:\.\d+)?)%/i);
+  const g=growth?Math.round(parseFloat(growth[1])):null;
+  const n=nrr?Math.round(parseFloat(nrr[1])):null;
+  const m=gm?Math.round(parseFloat(gm[1])):null;
+  const score = computeScore(g, m, n, text);
   const verdict=score>=75?'proceed':score>=55?'caution':'risk';
+
   const risks=[];
-  if(text.toLowerCase().includes('concentration'))risks.push({t:'Customer concentration risk — top customers represent outsized ARR share',s:'warning'});
-  if(text.toLowerCase().includes('key-man')||text.toLowerCase().includes('key man'))risks.push({t:'Key-man dependency risk in leadership or IP ownership',s:'risk'});
-  if(text.toLowerCase().includes('aws')&&!text.toLowerCase().includes('multi-cloud'))risks.push({t:'Single-cloud (AWS) dependency — no multi-cloud failover strategy disclosed',s:'warning'});
-  if(text.toLowerCase().includes('ebitda: -')||text.toLowerCase().includes('burn rate'))risks.push({t:'Pre-profitability stage; burn rate and runway duration require validation',s:'warning'});
-  if(text.toLowerCase().includes('microsoft')||text.toLowerCase().includes('google workspace'))risks.push({t:'Large-cap incumbents (Microsoft Copilot, Google Workspace AI) entering the space',s:'risk'});
-  if(text.toLowerCase().includes('enterprise')&&text.toLowerCase().includes('sales cycle'))risks.push({t:'Enterprise sales cycle elongation signals GTM friction at higher ACV tiers',s:'warning'});
-  if(!risks.length)risks.push({t:'No material risk flags identified in document — deeper operational diligence recommended',s:'neutral'});
+  if(tl.includes('concentration'))risks.push({t:'Customer concentration risk — top customers represent an outsized share of revenue',s:'warning'});
+  if(tl.includes('key-man')||tl.includes('key man'))risks.push({t:'Key-man dependency risk in leadership or IP ownership',s:'risk'});
+  if(tl.includes('aws')&&!tl.includes('multi-cloud'))risks.push({t:'Single-cloud (AWS) dependency — no multi-cloud failover strategy disclosed',s:'warning'});
+  if(tl.includes('ebitda: -')||tl.includes('burn rate'))risks.push({t:'Pre-profitability; burn rate and runway require validation',s:'warning'});
+  if(tl.includes('microsoft')||tl.includes('google workspace'))risks.push({t:'Hyperscaler incumbents (Microsoft, Google) entering adjacent space',s:'risk'});
+  if(tl.includes('enterprise')&&tl.includes('sales cycle'))risks.push({t:'Enterprise sales cycle elongation signals GTM friction at higher ACV',s:'warning'});
+  if(tl.includes('payer')||tl.includes('cms')||tl.includes('reimbursement'))risks.push({t:'Reimbursement / payer-mix risk — rate changes can materially impact margin',s:'risk'});
+  if(tl.includes('counterfeit')||tl.includes('trust & safety')||tl.includes('trust and safety'))risks.push({t:'Trust & safety exposure — counterfeit or dispute rates trending unfavorably',s:'warning'});
+  if(tl.includes('paid acquisition')||tl.includes('cac inflation')||/meta|tiktok/.test(tl))risks.push({t:'Paid-acquisition reliance creates CAC inflation exposure',s:'warning'});
+  if(tl.includes('certificate of need')||tl.includes('regulatory'))risks.push({t:'Regulatory / licensing exposure across operating geographies',s:'warning'});
+  if(!risks.length)risks.push({t:'No material risk flags surfaced in pattern scan — deeper operational diligence recommended',s:'neutral'});
+
   const gaps=[];
-  if(text.toLowerCase().includes('churn')&&text.toLowerCase().includes('not provided'))gaps.push('Cohort-level churn data and gross churn by vintage not provided');
-  if(text.toLowerCase().includes('unit economics')&&text.toLowerCase().includes('not disclosed'))gaps.push('Unit economics breakdown by vertical not disclosed');
-  if(text.toLowerCase().includes('international')&&text.toLowerCase().includes('unclear'))gaps.push('International revenue pipeline lacks specificity');
-  if(gaps.length<2)gaps.push('Full management equity rollover commitments and vesting schedules not included');
-  if(gaps.length<3)gaps.push('ARR recognition methodology audit trail not validated by QofE');
+  if(tl.includes('churn')&&tl.includes('not provided'))gaps.push('Cohort-level churn data and gross churn by vintage not provided');
+  if(tl.includes('unit economics')&&tl.includes('not disclosed'))gaps.push('Unit economics breakdown by vertical/segment not disclosed');
+  if(tl.includes('international')&&tl.includes('unclear'))gaps.push('International revenue pipeline lacks specificity');
+  if(tl.includes('quality-of-earnings')||tl.includes('qofe'))gaps.push('Quality-of-Earnings adjustments not yet validated');
+  if(tl.includes('payer-contract')||tl.includes('payer contract'))gaps.push('Detailed payer contract rate cards withheld');
+  if(gaps.length<3)gaps.push('Full management equity rollover commitments and vesting schedules not provided');
+  if(gaps.length<4)gaps.push('Revenue recognition methodology audit trail not independently validated');
+
   const positives=[];
   if(n&&n>110)positives.push(`NRR of ${n}% indicates strong product-market fit and low gross churn`);
-  if(g&&g>50)positives.push(`${g}% YoY ARR growth demonstrates scalable go-to-market motion`);
-  if(m&&m>70)positives.push(`Gross margin of ${m}% is within or above the SaaS benchmark range (70–80%)`);
-  if(text.toLowerCase().includes('soc 2')||text.toLowerCase().includes('hipaa'))positives.push('Compliance-ready architecture (SOC 2 Type II, HIPAA) reduces enterprise sales friction');
-  if(text.toLowerCase().includes('patent'))positives.push('Patent-pending proprietary AI engine creates defensible IP moat');
+  if(g&&g>50)positives.push(`${g}% YoY revenue growth demonstrates scalable GTM motion`);
+  if(m&&m>70)positives.push(`Gross margin of ${m}% sits in or above the sector benchmark range`);
+  if(tl.includes('soc 2')||tl.includes('hipaa')||tl.includes('hitrust'))positives.push('Compliance posture (SOC 2 / HIPAA / HITRUST) reduces enterprise sales friction');
+  if(tl.includes('patent'))positives.push('Patent or proprietary IP creates a defensible technology moat');
+  if(tl.includes('market share')||tl.includes('top 3'))positives.push('Demonstrated regional market-share leadership in core geographies');
+  if(tl.includes('ltv/cac')||tl.includes('ltv:cac'))positives.push('LTV/CAC ratio supports sustained unit economics at current spend');
   if(!positives.length)positives.push('Established customer base with verifiable traction identified');
-  return{company,dealType,arrVal:arr?arr[1]:'N/A',revenueGrowth:g,grossMargin:m,nrr:n,score,verdict,risks,gaps,positives};
+
+  // Revenue drivers
+  const revenueDrivers = [];
+  if (n && n > 110) revenueDrivers.push('Net expansion within existing accounts (NRR > 100%) is a material driver');
+  if (tl.includes('integration')) revenueDrivers.push('Integration breadth driving enterprise stickiness and cross-sell');
+  if (tl.includes('paid acquisition')||/meta|tiktok/.test(tl)) revenueDrivers.push('Paid social acquisition (Meta/TikTok) as primary new-user funnel');
+  if (tl.includes('same-clinic')||tl.includes('same-store')) revenueDrivers.push('Same-site organic growth complementing acquired-clinic integration');
+  if (tl.includes('acquired')||tl.includes('acquisitions')) revenueDrivers.push('Inorganic growth from recent tuck-in acquisitions');
+  if (tl.includes('international')||tl.includes('uk')||tl.includes('europe')) revenueDrivers.push('International expansion contributing incremental growth');
+  if (!revenueDrivers.length) revenueDrivers.push('Top-line growth drivers not fully disclosed — segment-level breakdown required');
+
+  // Competitive position narrative
+  const compParts = [];
+  if (tl.includes('patent')) compParts.push('Patent activity suggests intentional IP defensibility.');
+  if (tl.includes('market share')||tl.includes('top 3')) compParts.push('The Company has demonstrated regional market share leadership.');
+  if (tl.includes('microsoft')||tl.includes('google')||tl.includes('hospital systems')||tl.includes('incumbent')) compParts.push('Competition includes well-capitalized incumbents and hyperscalers entering adjacent categories.');
+  if (tl.includes('poshmark')||tl.includes('depop')||tl.includes('vinted')||tl.includes('orthopedic partners')) compParts.push('Direct competitors are visible and well-funded — differentiation must remain durable.');
+  if (!compParts.length) compParts.push('Competitive landscape is partially disclosed; competitive defensibility requires deeper validation.');
+  const competitivePosition = compParts.join(' ');
+
+  // Diligence questions
+  const diligenceQuestions = [
+    'What is the cohort-level retention curve over the trailing 24 months by sign-up vintage?',
+    'How do unit economics differ by segment, geography, and acquisition channel?',
+    'What is the rate-card / pricing exposure to your top 3 customers or payers over the next 12 months?',
+    'Walk us through the FY26 budget — what assumptions need to hold for the plan to deliver?',
+    'What are the key-person dependencies and how are they mitigated contractually?',
+    'How is the team thinking about competitive response from hyperscalers / well-funded incumbents?',
+    'What is the integration playbook and synergy realization timeline for recent acquisitions?',
+    'What regulatory or compliance changes are you tracking that could affect the next 24 months?'
+  ];
+
+  const nextSteps = [
+    'Schedule management presentation and CFO/CEO Q&A',
+    'Issue comprehensive VDR data request (use Data Gaps report)',
+    'Engage quality-of-earnings advisor to validate revenue recognition and adjustments',
+    'Commission independent market sizing to validate TAM and growth assumptions',
+    'Conduct 5–7 customer / payer reference calls (prioritize top accounts)',
+    'Review IP assignments, regulatory standing, and material contracts',
+    'Prepare LOI / term sheet if management presentation clears bar'
+  ];
+
+  const dtLabel = {pe_buyout:'PE Buyout / LBO', growth_equity:'Growth Equity', strategic_ma:'Strategic M&A', vc_series:'Venture Round', ipo_review:'IPO Review'}[dealType] || dealType;
+  const arrLabel = arr ? fmtArr(arr[1].trim()) : 'N/A';
+  const execParts = [
+    `${company} is being evaluated for a ${dtLabel} transaction.`,
+    arrLabel !== 'N/A' ? `Revenue base of ${arrLabel}${g!=null?` is growing at ${g}% YoY`:''}${m!=null?` on ${m}% gross margins`:''}.` : '',
+    n!=null ? `Net revenue retention of ${n}% indicates ${n>=120?'strong':'modest'} expansion economics.` : '',
+    risks.length ? `Primary risk vectors include ${risks.slice(0,2).map(r=>r.t.toLowerCase().split('—')[0].split(',')[0].trim()).join(' and ')}.` : '',
+    `Pattern-based scoring places this deal at ${score}/100 — ${verdict==='proceed'?'a credible candidate to advance to LOI':verdict==='caution'?'worth advancing only with targeted mitigation':'best held pending material clarification'}.`
+  ].filter(Boolean);
+  const executiveSummary = execParts.join(' ');
+
+  const recommendation = verdict==='proceed'
+    ? 'Recommend advancing to LOI with a structured diligence workstream. Validate the data gaps below before signing, and confirm key-person and revenue-concentration risks are mitigated in the LOI structure.'
+    : verdict==='caution'
+    ? 'Recommend conditional advancement — proceed to management meetings, but withhold LOI until the identified data gaps and risk flags are clarified. Structural protections (escrow, earnouts, reps) likely required.'
+    : 'Recommend holding pending material clarification. Current information density is insufficient to support competitive bidding; revisit if revised disclosures address the gaps below.';
+
+  return {
+    company, dealType,
+    arrVal: arrLabel, revenueGrowth: g, grossMargin: m, nrr: n,
+    score, verdict,
+    executiveSummary,
+    investmentHighlights: positives,
+    revenueDrivers,
+    keyRisks: risks,
+    competitivePosition,
+    dataGaps: gaps,
+    diligenceQuestions,
+    nextSteps,
+    recommendation,
+    // back-compat aliases used by older code paths
+    positives, risks, gaps
+  };
 }
 
 function switchTab(btn,tab){
@@ -727,6 +1137,8 @@ function switchTab(btn,tab){
   renderTab(tab);
 }
 
+const DEAL_TYPE_LABELS = {pe_buyout:'PE Buyout / LBO',growth_equity:'Growth Equity',strategic_ma:'Strategic M&A',vc_series:'Venture Round',ipo_review:'IPO Review'};
+
 function renderTab(tab){
   if(!result)return;
   const R=result,el=document.getElementById('outputBody');
@@ -734,9 +1146,10 @@ function renderTab(tab){
     const sc=R.score>=75?'high':R.score>=55?'mid':'low';
     const vi=R.verdict==='proceed'?'trending-up':R.verdict==='caution'?'alert-triangle':'shield-x';
     const vl=R.verdict==='proceed'?'Proceed to LOI':R.verdict==='caution'?'Proceed with Caution':'Significant Risk — Hold';
-    const dtl={pe_buyout:'PE Buyout / LBO',growth_equity:'Growth Equity',strategic_ma:'Strategic M&A',vc_series:'Venture Round',ipo_review:'IPO Review'};
+    const highlights = R.investmentHighlights || R.positives || [];
+    const risks = R.keyRisks || R.risks || [];
     el.innerHTML=`
-      <div class="summary-meta"><div class="company-name">${R.company}</div><div class="deal-meta">${dtl[R.dealType]||R.dealType} · ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div></div>
+      <div class="summary-meta"><div class="company-name">${R.company}</div><div class="deal-meta">${DEAL_TYPE_LABELS[R.dealType]||R.dealType} · ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div></div>
       <div class="verdict-card verdict-${R.verdict}">
         <div class="verdict-hdr"><div class="verdict-icon"><i data-lucide="${vi}"></i></div><div><div class="verdict-label-sm">AI Recommendation</div><div class="verdict-val">${vl}</div></div></div>
         <div class="verdict-label-sm" style="margin-bottom:var(--space-1)">Deal Strength Score</div>
@@ -744,17 +1157,18 @@ function renderTab(tab){
         <div class="score-labels"><span>0</span><span id="sVal">0/100</span><span>100</span></div>
       </div>
       <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">ARR</div><div class="kpi-value">${fmtArr(R.arrVal)}</div>${R.revenueGrowth!=null?`<div class="kpi-delta positive">+${R.revenueGrowth}% YoY</div>`:''}</div>
+        <div class="kpi-card"><div class="kpi-label">ARR / Revenue</div><div class="kpi-value">${fmtArr(R.arrVal)}</div>${R.revenueGrowth!=null?`<div class="kpi-delta positive">+${R.revenueGrowth}% YoY</div>`:''}</div>
         <div class="kpi-card"><div class="kpi-label">Gross Margin</div><div class="kpi-value">${R.grossMargin!=null?R.grossMargin+'%':'N/A'}</div>${R.grossMargin!=null?`<div class="kpi-delta ${R.grossMargin>70?'positive':'neutral'}">${R.grossMargin>70?'Above benchmark':'At benchmark'}</div>`:''}</div>
         <div class="kpi-card"><div class="kpi-label">NRR</div><div class="kpi-value">${R.nrr!=null?R.nrr+'%':'N/A'}</div>${R.nrr!=null?`<div class="kpi-delta ${R.nrr>110?'positive':'neutral'}">${R.nrr>110?'Expansion revenue':'Near benchmark'}</div>`:''}</div>
       </div>
+      ${R.executiveSummary?`<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="file-text"></i><span class="sec-card-title">Executive Summary</span></div><div class="sec-card-body memo-section"><p>${escapeHTML(R.executiveSummary)}</p></div></div>`:''}
       <div class="sec-card">
-        <div class="sec-card-hdr" style="color:var(--color-success);"><i data-lucide="trending-up"></i><span class="sec-card-title">Investment Highlights</span><span class="sec-count">${R.positives.length} identified</span></div>
-        <div class="sec-card-body">${R.positives.map(p=>`<div class="finding positive"><div class="finding-dot"></div><span>${p}</span></div>`).join('')}</div>
+        <div class="sec-card-hdr" style="color:var(--color-success);"><i data-lucide="trending-up"></i><span class="sec-card-title">Investment Highlights</span><span class="sec-count">${highlights.length} identified</span></div>
+        <div class="sec-card-body">${highlights.map(p=>`<div class="finding positive"><div class="finding-dot"></div><span>${escapeHTML(p)}</span></div>`).join('')}</div>
       </div>
       <div class="sec-card">
-        <div class="sec-card-hdr" style="color:var(--color-warning);"><i data-lucide="alert-triangle"></i><span class="sec-card-title">Risk Summary</span><span class="sec-count">${R.risks.length} flags</span></div>
-        <div class="sec-card-body">${R.risks.slice(0,3).map(r=>`<div class="finding ${r.s}"><div class="finding-dot"></div><span>${r.t}</span></div>`).join('')}${R.risks.length>3?`<button class="sample-link" onclick="goTab('risks')">View all ${R.risks.length} flags →</button>`:''}</div>
+        <div class="sec-card-hdr" style="color:var(--color-warning);"><i data-lucide="alert-triangle"></i><span class="sec-card-title">Risk Summary</span><span class="sec-count">${risks.length} flags</span></div>
+        <div class="sec-card-body">${risks.slice(0,3).map(r=>`<div class="finding ${r.s||'neutral'}"><div class="finding-dot"></div><span>${escapeHTML(r.t)}</span></div>`).join('')}${risks.length>3?`<button class="sample-link" onclick="goTab('risks')">View all ${risks.length} flags →</button>`:''}</div>
       </div>
       <div class="ai-note"><i data-lucide="info"></i><span>AI-generated analysis to accelerate diligence — not a substitute for qualified M&A, legal, and financial advisors.</span></div>`;
     lucide.createIcons();
@@ -764,19 +1178,50 @@ function renderTab(tab){
       if(val){let c=0;const iv=setInterval(()=>{c+=2;if(c>=R.score){val.textContent=R.score+'/100';clearInterval(iv);}else val.textContent=c+'/100';},18);}
     },80);
   }
+  else if(tab==='memo'){
+    const highlights = R.investmentHighlights || R.positives || [];
+    const drivers = R.revenueDrivers || [];
+    const risks = R.keyRisks || R.risks || [];
+    const gaps = R.dataGaps || R.gaps || [];
+    const questions = R.diligenceQuestions || [];
+    const next = R.nextSteps || [];
+    el.innerHTML = `
+      <div class="sec-card"><div class="sec-card-hdr"><i data-lucide="file-text"></i><span class="sec-card-title">Executive Summary</span></div><div class="sec-card-body memo-section"><p>${escapeHTML(R.executiveSummary||'—')}</p></div></div>
+      <div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-success);"><i data-lucide="trending-up"></i><span class="sec-card-title">Investment Highlights</span></div><div class="sec-card-body memo-section"><div class="memo-list">${highlights.map(h=>`<div class="memo-list-item">${escapeHTML(h)}</div>`).join('')}</div></div></div>
+      <div class="sec-card"><div class="sec-card-hdr"><i data-lucide="bar-chart-2"></i><span class="sec-card-title">Revenue Drivers</span></div><div class="sec-card-body memo-section"><div class="memo-list">${drivers.map(d=>`<div class="memo-list-item">${escapeHTML(d)}</div>`).join('')}</div></div></div>
+      <div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-error);"><i data-lucide="shield-alert"></i><span class="sec-card-title">Key Risks</span></div><div class="sec-card-body">${risks.map(r=>`<div class="finding ${r.s||'neutral'}"><div class="finding-dot"></div><span>${escapeHTML(r.t)}</span></div>`).join('')}</div></div>
+      <div class="sec-card"><div class="sec-card-hdr"><i data-lucide="swords"></i><span class="sec-card-title">Competitive Position</span></div><div class="sec-card-body memo-section"><p>${escapeHTML(R.competitivePosition||'—')}</p></div></div>
+      <div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-gold);"><i data-lucide="search-x"></i><span class="sec-card-title">Data Gaps</span></div><div class="sec-card-body">${gaps.map(g=>`<div class="gap-item"><i data-lucide="circle-dashed"></i><span>${escapeHTML(g)}</span></div>`).join('')}</div></div>
+      <div class="sec-card"><div class="sec-card-hdr"><i data-lucide="help-circle"></i><span class="sec-card-title">Diligence Questions</span></div><div class="sec-card-body memo-section">${questions.map((q,i)=>`<div class="question-item"><span class="question-num">Q${i+1}</span><span>${escapeHTML(q)}</span></div>`).join('')}</div></div>
+      <div class="sec-card"><div class="sec-card-hdr"><i data-lucide="list-checks"></i><span class="sec-card-title">Recommendation / Next Steps</span></div><div class="sec-card-body memo-section">${R.recommendation?`<p style="margin-bottom:var(--space-3);">${escapeHTML(R.recommendation)}</p>`:''}<div class="next-steps">${next.map((s,i)=>`<div class="next-step"><div class="step-num">${i+1}</div><span>${escapeHTML(s)}</span></div>`).join('')}</div></div></div>
+      <div class="ai-note"><i data-lucide="info"></i><span>Use Export to download this memo as Markdown or PDF, or copy to clipboard.</span></div>`;
+    lucide.createIcons();
+  }
   else if(tab==='risks'){
-    el.innerHTML=`<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-error);"><i data-lucide="shield-alert"></i><span class="sec-card-title">All Risk Flags</span><span class="sec-count">${R.risks.length} total</span></div><div class="sec-card-body">${R.risks.map(r=>`<div class="flag-item"><i data-lucide="${r.s==='risk'?'x-circle':'alert-triangle'}"></i><span>${r.t}</span></div>`).join('')}</div></div><div class="ai-note"><i data-lucide="info"></i><span>Risk flags extracted via pattern-matching against PE diligence criteria. Validate materiality with sector and legal specialists.</span></div>`;
+    const risks = R.keyRisks || R.risks || [];
+    el.innerHTML=`<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-error);"><i data-lucide="shield-alert"></i><span class="sec-card-title">All Risk Flags</span><span class="sec-count">${risks.length} total</span></div><div class="sec-card-body">${risks.map(r=>`<div class="flag-item"><i data-lucide="${r.s==='risk'?'x-circle':'alert-triangle'}"></i><span>${escapeHTML(r.t)}</span></div>`).join('')}</div></div><div class="ai-note"><i data-lucide="info"></i><span>Risk flags surfaced from the source document. Validate materiality with sector and legal specialists.</span></div>`;
     lucide.createIcons();
   }
   else if(tab==='gaps'){
-    el.innerHTML=`<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-gold);"><i data-lucide="search-x"></i><span class="sec-card-title">Data Gaps & VDR Requests</span><span class="sec-count">${R.gaps.length} gaps</span></div><div class="sec-card-body">${R.gaps.map(g=>`<div class="gap-item"><i data-lucide="circle-dashed"></i><span>${g}</span></div>`).join('')}</div></div><div class="sec-card"><div class="sec-card-hdr"><i data-lucide="clipboard-list"></i><span class="sec-card-title">Suggested Diligence Requests</span></div><div class="sec-card-body"><div class="gap-item"><i data-lucide="circle-dashed"></i><span>Monthly cohort retention waterfall (by customer sign-up quarter)</span></div><div class="gap-item"><i data-lucide="circle-dashed"></i><span>Management equity waterfall and option pool dilution schedule</span></div><div class="gap-item"><i data-lucide="circle-dashed"></i><span>Full customer list with ACV, tenure, and renewal dates</span></div></div></div><div class="ai-note"><i data-lucide="info"></i><span>Data gaps seeded from withheld or absent information. Use to populate your VDR data room request to management.</span></div>`;
+    const gaps = R.dataGaps || R.gaps || [];
+    el.innerHTML=`<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-gold);"><i data-lucide="search-x"></i><span class="sec-card-title">Data Gaps & VDR Requests</span><span class="sec-count">${gaps.length} gaps</span></div><div class="sec-card-body">${gaps.map(g=>`<div class="gap-item"><i data-lucide="circle-dashed"></i><span>${escapeHTML(g)}</span></div>`).join('')}</div></div><div class="ai-note"><i data-lucide="info"></i><span>Use these to populate the VDR data-room request to management.</span></div>`;
+    lucide.createIcons();
+  }
+  else if(tab==='questions'){
+    const questions = R.diligenceQuestions || [];
+    el.innerHTML = `<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="help-circle"></i><span class="sec-card-title">Management Diligence Questions</span><span class="sec-count">${questions.length} questions</span></div><div class="sec-card-body">${questions.map((q,i)=>`<div class="question-item"><span class="question-num">Q${i+1}</span><span>${escapeHTML(q)}</span></div>`).join('')}</div></div><div class="ai-note"><i data-lucide="info"></i><span>Prioritized for management presentation. Reorder based on call agenda and time constraints.</span></div>`;
     lucide.createIcons();
   }
   else if(tab==='nextsteps'){
-    const steps=['Schedule management presentation and CFO/CEO Q&A','Issue comprehensive VDR data request (use Data Gaps report)','Engage quality-of-earnings advisor to validate ARR recognition','Commission independent market sizing to validate TAM claims','Conduct 5–7 customer reference calls (prioritize top ACV)','Review all IP assignments, patents, and open-source exposure','Prepare LOI / term sheet if management presentation clears bar'];
-    el.innerHTML=`<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="list-checks"></i><span class="sec-card-title">Recommended Next Steps</span></div><div class="sec-card-body"><div class="next-steps">${steps.map((s,i)=>`<div class="next-step"><div class="step-num">${i+1}</div><span>${s}</span></div>`).join('')}</div></div></div><div class="ai-note"><i data-lucide="info"></i><span>Sequence based on deal type, risk flags, and data gaps. Adjust per deal timeline and management availability.</span></div>`;
+    const steps = R.nextSteps && R.nextSteps.length ? R.nextSteps : ['Schedule management presentation and CFO/CEO Q&A','Issue comprehensive VDR data request','Engage quality-of-earnings advisor','Commission independent market sizing','Conduct 5–7 customer reference calls','Review IP and material contracts','Prepare LOI / term sheet'];
+    el.innerHTML=`${R.recommendation?`<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="check-circle"></i><span class="sec-card-title">Recommendation</span></div><div class="sec-card-body memo-section"><p>${escapeHTML(R.recommendation)}</p></div></div>`:''}<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="list-checks"></i><span class="sec-card-title">Recommended Next Steps</span></div><div class="sec-card-body"><div class="next-steps">${steps.map((s,i)=>`<div class="next-step"><div class="step-num">${i+1}</div><span>${escapeHTML(s)}</span></div>`).join('')}</div></div></div><div class="ai-note"><i data-lucide="info"></i><span>Sequence based on deal type and risk flags. Adjust per timeline and management availability.</span></div>`;
     lucide.createIcons();
   }
+}
+
+function escapeHTML(s){
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 function goTab(name){
@@ -784,22 +1229,221 @@ function goTab(name){
   renderTab(name);
 }
 
-function exportSummary(){
-  const btn=document.getElementById('exportBtn');
-  btn.innerHTML='<i data-lucide="loader" style="animation:spin .8s linear infinite;"></i> Generating...';
+// ── Export: Markdown / PDF / Clipboard ───────────────────────────────────
+function toggleExportMenu(e){
+  if (e) e.stopPropagation();
+  document.getElementById('exportMenu').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('exportMenu');
+  const wrap = document.getElementById('exportWrap');
+  if (menu && wrap && !wrap.contains(e.target)) menu.classList.remove('open');
+});
+
+function buildMemoMarkdown(){
+  if (!result) return '';
+  const R = result;
+  const dtl = DEAL_TYPE_LABELS[R.dealType] || R.dealType;
+  const date = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const verdict = R.verdict==='proceed'?'Proceed to LOI':R.verdict==='caution'?'Proceed with Caution':'Significant Risk — Hold';
+  const highlights = R.investmentHighlights || R.positives || [];
+  const drivers = R.revenueDrivers || [];
+  const risks = R.keyRisks || R.risks || [];
+  const gaps = R.dataGaps || R.gaps || [];
+  const questions = R.diligenceQuestions || [];
+  const next = R.nextSteps || [];
+
+  const lines = [];
+  lines.push(`# Due Diligence Memo — ${R.company}`);
+  lines.push('');
+  lines.push(`**Deal Type:** ${dtl}  `);
+  lines.push(`**Date:** ${date}  `);
+  lines.push(`**Recommendation:** ${verdict}  `);
+  lines.push(`**Deal Strength Score:** ${R.score}/100`);
+  lines.push('');
+  lines.push('## Key Metrics');
+  lines.push('');
+  lines.push(`| Metric | Value |`);
+  lines.push(`|---|---|`);
+  lines.push(`| ARR / Revenue | ${fmtArr(R.arrVal)} |`);
+  lines.push(`| Revenue Growth (YoY) | ${R.revenueGrowth!=null?R.revenueGrowth+'%':'N/A'} |`);
+  lines.push(`| Gross Margin | ${R.grossMargin!=null?R.grossMargin+'%':'N/A'} |`);
+  lines.push(`| Net Revenue Retention | ${R.nrr!=null?R.nrr+'%':'N/A'} |`);
+  lines.push('');
+  if (R.executiveSummary) {
+    lines.push('## Executive Summary');
+    lines.push('');
+    lines.push(R.executiveSummary);
+    lines.push('');
+  }
+  if (highlights.length) {
+    lines.push('## Investment Highlights');
+    lines.push('');
+    highlights.forEach(h => lines.push(`- ${h}`));
+    lines.push('');
+  }
+  if (drivers.length) {
+    lines.push('## Revenue Drivers');
+    lines.push('');
+    drivers.forEach(d => lines.push(`- ${d}`));
+    lines.push('');
+  }
+  if (risks.length) {
+    lines.push('## Key Risks');
+    lines.push('');
+    risks.forEach(r => lines.push(`- **[${(r.s||'neutral').toUpperCase()}]** ${r.t}`));
+    lines.push('');
+  }
+  if (R.competitivePosition) {
+    lines.push('## Competitive Position');
+    lines.push('');
+    lines.push(R.competitivePosition);
+    lines.push('');
+  }
+  if (gaps.length) {
+    lines.push('## Data Gaps');
+    lines.push('');
+    gaps.forEach(g => lines.push(`- ${g}`));
+    lines.push('');
+  }
+  if (questions.length) {
+    lines.push('## Diligence Questions');
+    lines.push('');
+    questions.forEach((q,i) => lines.push(`${i+1}. ${q}`));
+    lines.push('');
+  }
+  lines.push('## Recommendation / Next Steps');
+  lines.push('');
+  if (R.recommendation) { lines.push(R.recommendation); lines.push(''); }
+  next.forEach((s,i) => lines.push(`${i+1}. ${s}`));
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push('_Generated by DiligenceAI — AI-assisted memo, not a substitute for qualified M&A, legal, and financial advisors._');
+  return lines.join('\n');
+}
+
+function safeFileBase(){
+  const base = (result && result.company) ? result.company : 'diligence-memo';
+  return base.replace(/[^a-z0-9\-_.]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,80) || 'diligence-memo';
+}
+
+function downloadBlob(filename, blob){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<i data-lucide="check"></i><span>${escapeHTML(msg)}</span>`;
+  document.body.appendChild(t);
   lucide.createIcons();
-  setTimeout(()=>{btn.innerHTML='<i data-lucide="check"></i> Exported!';lucide.createIcons();setTimeout(()=>{btn.innerHTML='<i data-lucide="download"></i> Export PDF';lucide.createIcons();},2000);},1400);
+  setTimeout(()=>{ t.remove(); }, 2400);
+}
+
+function exportMarkdown(){
+  document.getElementById('exportMenu').classList.remove('open');
+  if (!result) return;
+  const md = buildMemoMarkdown();
+  downloadBlob(`${safeFileBase()}.md`, new Blob([md], {type:'text/markdown'}));
+  showToast('Markdown downloaded');
+}
+
+async function copyMarkdownToClipboard(){
+  document.getElementById('exportMenu').classList.remove('open');
+  if (!result) return;
+  const md = buildMemoMarkdown();
+  try {
+    await navigator.clipboard.writeText(md);
+    showToast('Copied memo to clipboard');
+  } catch (e) {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = md; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showToast('Copied memo to clipboard'); }
+    catch(_) { showToast('Copy failed — try Markdown download'); }
+    ta.remove();
+  }
+}
+
+function exportPDF(){
+  document.getElementById('exportMenu').classList.remove('open');
+  if (!result) return;
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    showToast('PDF export unavailable — try Markdown');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'letter'});
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 56;
+  const marginY = 56;
+  const maxW = pageW - marginX*2;
+  let y = marginY;
+
+  const md = buildMemoMarkdown();
+  const lines = md.split('\n');
+
+  function ensureSpace(h){
+    if (y + h > pageH - marginY) { doc.addPage(); y = marginY; }
+  }
+  function write(text, opts){
+    const size = opts.size || 11;
+    const style = opts.style || 'normal';
+    doc.setFont('helvetica', style);
+    doc.setFontSize(size);
+    const wrapped = doc.splitTextToSize(text, maxW);
+    wrapped.forEach(w => {
+      ensureSpace(size + 4);
+      doc.text(w, marginX, y);
+      y += size + 4;
+    });
+  }
+
+  lines.forEach(line => {
+    if (!line.trim()) { y += 6; return; }
+    if (line.startsWith('# ')) { y += 4; write(line.slice(2), {size:18, style:'bold'}); y += 4; return; }
+    if (line.startsWith('## ')) { y += 6; write(line.slice(3), {size:13, style:'bold'}); y += 2; return; }
+    if (line.startsWith('### ')) { write(line.slice(4), {size:11, style:'bold'}); return; }
+    if (line.startsWith('---')) { ensureSpace(8); doc.setDrawColor(180); doc.line(marginX, y, pageW - marginX, y); y += 10; return; }
+    if (line.startsWith('|')) {
+      // Render table rows as plain text
+      const cleaned = line.replace(/^\||\|$/g,'').split('|').map(c=>c.trim()).filter(Boolean).join('   ');
+      if (cleaned && !/^[-: ]+$/.test(cleaned.replace(/\s+/g,''))) write(cleaned, {size:10});
+      return;
+    }
+    if (line.startsWith('- ') || /^\d+\. /.test(line)) {
+      // Strip markdown emphasis
+      const clean = line.replace(/\*\*(.+?)\*\*/g, '$1');
+      write('• ' + clean.replace(/^- /,'').replace(/^\d+\. /,''), {size:11});
+      return;
+    }
+    if (line.startsWith('**') && line.endsWith('  ')) {
+      write(line.replace(/\*\*/g,''), {size:11, style:'bold'});
+      return;
+    }
+    const clean = line.replace(/\*\*(.+?)\*\*/g, '$1').replace(/_(.+?)_/g,'$1');
+    write(clean, {size:11});
+  });
+
+  doc.save(`${safeFileBase()}.pdf`);
+  showToast('PDF downloaded');
 }
 
 function resetAll(){
   document.getElementById('docText').value='';
   document.getElementById('companyName').value='';
   document.getElementById('tabBar').style.display='none';
-  document.getElementById('exportBtn').style.display='none';
+  document.getElementById('exportWrap').style.display='none';
   document.getElementById('analyzeBtn').disabled=false;
   result=null;
   removeFile();
-  document.getElementById('outputBody').innerHTML='<div class="empty-state"><div class="empty-state-mark"><svg width="34" height="34" viewBox="0 0 32 32" fill="none"><circle cx="14" cy="14" r="7" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="14" r="2.2" fill="currentColor"/><path d="M19.5 19.5 L26 26" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M11 14.2 L13.2 16.4 L17.2 11.6" stroke="var(--color-bg)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3>Ready when you are</h3><p>Paste a CIM, deal memo, or earnings transcript — get a structured diligence summary in seconds.</p><div class="empty-state-hints"><div class="empty-state-hint"><i data-lucide="file-text"></i> Drop a PDF, DOCX, or paste raw text</div><div class="empty-state-hint"><i data-lucide="sparkles"></i> Try the <kbd>sample CIM</kbd> to see output format</div><div class="empty-state-hint"><i data-lucide="settings-2"></i> Add an API key in Settings for live AI</div></div></div>';
+  document.getElementById('outputBody').innerHTML='<div class="empty-state"><div class="empty-state-mark"><svg width="34" height="34" viewBox="0 0 32 32" fill="none"><circle cx="14" cy="14" r="7" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="14" r="2.2" fill="currentColor"/><path d="M19.5 19.5 L26 26" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M11 14.2 L13.2 16.4 L17.2 11.6" stroke="var(--color-bg)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3>Ready when you are</h3><p>Paste a CIM, deal memo, or earnings transcript — get a structured diligence summary in seconds.</p><div class="empty-state-hints"><div class="empty-state-hint"><i data-lucide="file-text"></i> Drop a PDF, DOCX, or paste raw text</div><div class="empty-state-hint"><i data-lucide="sparkles"></i> Try a <kbd>sample deal</kbd> to see output format</div><div class="empty-state-hint"><i data-lucide="settings-2"></i> Add an API key in Settings for live AI</div></div></div>';
   lucide.createIcons();
 }
 
