@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DiligenceAI — Deal Intelligence</title>
+  <meta name="description" content="AI-assisted due diligence summarizer: turns CIMs and deal documents into a structured, source-grounded investment memo with deal-type lenses, valuation cross-checks, risk flags, and a responsible-AI governance layer." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='1' y='1' width='30' height='30' rx='7' fill='%231a1917'/><circle cx='14' cy='14' r='6.5' stroke='%234f98a3' stroke-width='2.4' fill='none'/><circle cx='14' cy='14' r='2.2' fill='%234f98a3'/><path d='M19.2 19.2 L25 25' stroke='%234f98a3' stroke-width='2.8' stroke-linecap='round'/><path d='M11 14.2 L13.2 16.4 L17.2 11.6' stroke='%231a1917' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <style>
+    :root,[data-theme="light"]{
+      --color-bg:#f7f6f2;--color-surface:#f9f8f5;--color-surface-2:#fbfbf9;
+      --color-surface-offset:#f0ede8;--color-surface-dynamic:#e6e4df;
+      --color-divider:#dcd9d5;--color-border:#d4d1ca;
+      --color-text:#28251d;--color-text-muted:#7a7974;--color-text-faint:#bab9b4;--color-text-inverse:#f9f8f4;
+      --color-primary:#01696f;--color-primary-hover:#0c4e54;--color-primary-active:#0f3638;--color-primary-highlight:#cedcd8;
+      --color-success:#437a22;--color-success-highlight:#d4dfcc;
+      --color-warning:#964219;--color-warning-highlight:#ddcfc6;
+      --color-error:#a12c7b;--color-error-highlight:#e0ced7;
+      --color-gold:#d19900;--color-gold-highlight:#e9e0c6;
+      --shadow-sm:0 1px 2px oklch(0.2 0.01 80/.06);--shadow-md:0 4px 12px oklch(0.2 0.01 80/.08);
+      --radius-sm:.375rem;--radius-md:.5rem;--radius-lg:.75rem;--radius-xl:1rem;--radius-full:9999px;
+      --space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-5:1.25rem;
+      --space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;--space-16:4rem;
+      --text-xs:clamp(.75rem,.7rem + .25vw,.875rem);--text-sm:clamp(.875rem,.8rem + .35vw,1rem);
+      --text-base:clamp(1rem,.95rem + .25vw,1.125rem);--text-lg:clamp(1.125rem,1rem + .75vw,1.5rem);
+      --text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);
+      --font-body:'Inter','Helvetica Neue',sans-serif;--font-mono:'JetBrains Mono',monospace;
+      --transition-i:180ms cubic-bezier(.16,1,.3,1);
+    }
+    [data-theme="dark"]{
+      --color-bg:#141312;--color-surface:#1a1917;--color-surface-2:#1f1e1c;
+      --color-surface-offset:#242320;--color-surface-dynamic:#2d2c2a;
+      --color-divider:#2e2d2b;--color-border:#393836;
+      --color-text:#cdccca;--color-text-muted:#797876;--color-text-faint:#5a5957;--color-text-inverse:#2b2a28;
+      --color-primary:#4f98a3;--color-primary-hover:#227f8b;--color-primary-active:#1a626b;--color-primary-highlight:#313b3b;
+      --color-success:#6daa45;--color-success-highlight:#3a4435;
+      --color-warning:#bb653b;--color-warning-highlight:#564942;
+      --color-error:#d163a7;--color-error-highlight:#4c3d46;
+      --color-gold:#e8af34;--color-gold-highlight:#4d4332;
+      --shadow-sm:0 1px 2px oklch(0 0 0/.25);--shadow-md:0 4px 12px oklch(0 0 0/.35);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+    body{height:100dvh;overflow:hidden;font-family:var(--font-body);font-size:var(--text-sm);color:var(--color-text);background:var(--color-bg);display:flex;flex-direction:column}
+    img{display:block;max-width:100%}
+    button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+    input,textarea,select{font:inherit;color:inherit}
+    :focus-visible{outline:2px solid var(--color-primary);outline-offset:3px;border-radius:var(--radius-sm)}
+    a,button,[role="button"],input,textarea,select{transition:color var(--transition-i),background var(--transition-i),border-color var(--transition-i),box-shadow var(--transition-i)}
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--color-surface-dynamic);border-radius:var(--radius-full)}
+
+    .app{display:flex;height:100dvh;overflow:hidden}
+
+    /* SIDEBAR */
+    .sidebar{width:228px;flex-shrink:0;background:var(--color-surface);border-right:1px solid var(--color-border);display:flex;flex-direction:column;padding:var(--space-5) 0;overflow-y:auto}
+    .sidebar-logo{display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-5) var(--space-5);border-bottom:1px solid var(--color-divider);margin-bottom:var(--space-4)}
+    .logo-icon{width:32px;height:32px;flex-shrink:0;color:var(--color-primary);filter:drop-shadow(0 1px 6px oklch(from var(--color-primary) l c h/.25))}
+    .logo-text{font-size:var(--text-sm);font-weight:700;line-height:1.2;letter-spacing:-.01em}
+    .logo-sub{font-size:10px;font-weight:500;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+    .sidebar-sec{font-size:var(--text-xs);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-faint);padding:var(--space-4) var(--space-5) var(--space-2)}
+    .nav-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-5);font-size:var(--text-sm);color:var(--color-text-muted);cursor:pointer;border-left:2px solid transparent}
+    .nav-item svg{width:15px;height:15px;flex-shrink:0}
+    .nav-item:hover{background:var(--color-surface-offset);color:var(--color-text)}
+    .nav-item.active{color:var(--color-primary);background:var(--color-primary-highlight);border-left-color:var(--color-primary)}
+    .sidebar-bottom{margin-top:auto;padding:var(--space-4) var(--space-5);border-top:1px solid var(--color-divider);display:flex;align-items:center;gap:var(--space-3)}
+    .avatar{width:30px;height:30px;border-radius:var(--radius-full);background:var(--color-primary-highlight);display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);font-weight:700;color:var(--color-primary);flex-shrink:0;position:relative}
+    .avatar-status{position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:var(--radius-full);background:var(--color-success);border:2px solid var(--color-surface)}
+    .av-info{flex:1;min-width:0}
+    .av-name{font-size:var(--text-xs);font-weight:600}
+    .av-role{font-size:var(--text-xs);color:var(--color-text-muted);display:flex;align-items:center;gap:6px}
+    .status-dot{width:6px;height:6px;border-radius:var(--radius-full);background:var(--color-success);box-shadow:0 0 0 2px oklch(from var(--color-success) l c h/.18);flex-shrink:0;animation:pulse 2.4s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+    .theme-btn{width:26px;height:26px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)}
+    .theme-btn:hover{background:var(--color-surface-offset);color:var(--color-text)}
+    .theme-btn svg{width:13px;height:13px}
+
+    /* MAIN */
+    .main{flex:1 1 0;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+    .topbar{height:56px;flex-shrink:0;background:var(--color-surface);border-bottom:1px solid var(--color-border);display:flex;align-items:center;padding:0 var(--space-8);gap:var(--space-3)}
+    .topbar-title{font-size:var(--text-base);font-weight:600;letter-spacing:-.01em}
+    .topbar-crumb{font-size:var(--text-xs);color:var(--color-text-faint);margin-right:var(--space-3)}
+    .badge{font-size:10px;font-weight:600;padding:3px var(--space-2);border-radius:var(--radius-full);background:var(--color-primary-highlight);color:var(--color-primary);display:inline-flex;align-items:center;gap:5px;letter-spacing:.04em;text-transform:uppercase}
+    .badge::before{content:"";width:5px;height:5px;border-radius:var(--radius-full);background:currentColor;box-shadow:0 0 6px currentColor}
+    .btn{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);font-size:var(--text-sm);font-weight:500;border-radius:var(--radius-md);cursor:pointer}
+    .btn svg{width:14px;height:14px}
+    .btn-ghost{color:var(--color-text-muted)}
+    .btn-ghost:hover{background:var(--color-surface-offset);color:var(--color-text)}
+    .btn-sm{padding:var(--space-1) var(--space-3);font-size:var(--text-xs)}
+
+    .content-area{flex:1 1 0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);overflow:hidden;min-height:0}
+
+    /* INPUT PANEL */
+    .input-panel{flex:1 1 0;border-right:1px solid var(--color-border);display:flex;flex-direction:column;overflow:hidden;min-height:0;min-width:0}
+    .panel-hdr{padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--color-divider);flex-shrink:0;display:flex;align-items:center;gap:var(--space-3)}
+    .panel-hdr-text{flex:1}
+    .panel-hdr-step{font-size:10px;font-weight:700;color:var(--color-primary);letter-spacing:.1em;text-transform:uppercase;padding:3px var(--space-2);background:var(--color-primary-highlight);border-radius:var(--radius-sm);font-variant-numeric:tabular-nums}
+    .panel-title{font-size:var(--text-sm);font-weight:600;letter-spacing:-.005em}
+    .panel-sub{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px}
+    .input-body{flex:1 1 0;overflow-y:auto;padding:var(--space-5) var(--space-6);display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+    .upload-zone{border:1.5px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-8) var(--space-6);text-align:center;cursor:pointer;transition:border-color var(--transition-i),background var(--transition-i),transform var(--transition-i);background:linear-gradient(180deg,var(--color-surface-2) 0%,transparent 100%)}
+    .upload-zone:hover,.upload-zone.drag-over{border-color:var(--color-primary);background:var(--color-primary-highlight);border-style:solid}
+    .upload-zone.drag-over{transform:scale(1.01)}
+    .upload-zone p{font-size:var(--text-sm);color:var(--color-text-muted)}
+    .upload-zone span{color:var(--color-primary);font-weight:500}
+    .upload-zone .hint{font-size:var(--text-xs);color:var(--color-text-faint);margin-top:var(--space-2)}
+    .upload-icon{width:36px;height:36px;margin:0 auto var(--space-3);color:var(--color-text-faint)}
+    .doc-list{display:flex;flex-direction:column;gap:var(--space-2)}
+    .uploaded-file{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-success-highlight);border:1px solid oklch(from var(--color-success) l c h / .25);border-radius:var(--radius-md)}
+    .uploaded-file svg{width:15px;height:15px;color:var(--color-success);flex-shrink:0}
+    .uploaded-file-name{font-size:var(--text-sm);font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .uploaded-file-size{font-size:var(--text-xs);color:var(--color-text-muted)}
+    .divider{height:1px;background:var(--color-divider)}
+    .or-row{display:flex;align-items:center;gap:var(--space-3)}
+    .or-row .divider{flex:1}
+    .or-row span{font-size:var(--text-xs);color:var(--color-text-faint)}
+    .form-group{display:flex;flex-direction:column;gap:var(--space-2)}
+    .form-label{font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted);letter-spacing:.04em}
+    .form-input,.form-select,.form-textarea{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);width:100%}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px oklch(from var(--color-primary) l c h/.15)}
+    .form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23797876' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+    .form-textarea{min-height:150px;resize:vertical;line-height:1.6}
+    .focus-areas{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+    .focus-tag{display:inline-flex;align-items:center;padding:var(--space-1) var(--space-3);font-size:var(--text-xs);font-weight:500;border-radius:var(--radius-full);border:1px solid var(--color-border);cursor:pointer;color:var(--color-text-muted);user-select:none}
+    .focus-tag:hover,.focus-tag.selected{border-color:var(--color-primary);color:var(--color-primary);background:var(--color-primary-highlight)}
+    .input-footer{padding:var(--space-4) var(--space-6);border-top:1px solid var(--color-divider);flex-shrink:0;display:flex;flex-direction:column;gap:var(--space-3)}
+    .analyze-btn{width:100%;padding:var(--space-3);background:var(--color-primary);color:var(--color-text-inverse);border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;display:flex;align-items:center;justify-content:center;gap:var(--space-3)}
+    .analyze-btn:hover{background:var(--color-primary-hover)}
+    .analyze-btn:disabled{opacity:.5;cursor:not-allowed}
+    .analyze-btn svg{width:15px;height:15px}
+    .consent-row{display:flex;align-items:flex-start;gap:var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted);line-height:1.45}
+    .consent-row input{margin-top:2px;flex-shrink:0;accent-color:var(--color-primary)}
+    .sample-link{font-size:var(--text-xs);color:var(--color-primary);text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;text-align:left}
+    .sample-link:hover{color:var(--color-primary-hover)}
+
+    /* OUTPUT PANEL */
+    .output-panel{flex:1 1 0;display:flex;flex-direction:column;overflow:hidden;background:var(--color-bg);min-height:0;min-width:0}
+    .tab-bar{display:flex;border-bottom:1px solid var(--color-border);background:var(--color-surface);flex-shrink:0;overflow-x:auto}
+    .tab-btn{padding:var(--space-3) var(--space-4);font-size:var(--text-xs);font-weight:500;color:var(--color-text-muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap}
+    .tab-btn:hover{color:var(--color-text)}
+    .tab-btn.active{color:var(--color-primary);border-bottom-color:var(--color-primary)}
+    .output-body{flex:1 1 0;overflow-y:auto;padding:var(--space-5) var(--space-6);min-height:0}
+    #outputBody > * + * { margin-top: var(--space-4); }
+
+    .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--space-16) var(--space-8);color:var(--color-text-muted)}
+    .empty-state-mark{width:72px;height:72px;border-radius:var(--radius-lg);background:linear-gradient(145deg,var(--color-surface),var(--color-surface-2));border:1px solid var(--color-border);display:flex;align-items:center;justify-content:center;margin-bottom:var(--space-5);color:var(--color-primary);box-shadow:var(--shadow-md);position:relative}
+    .empty-state-icon{color:var(--color-text-faint);margin-bottom:var(--space-4)}
+    .empty-state-icon svg{width:44px;height:44px}
+    .empty-state h3{font-size:var(--text-lg);font-weight:600;color:var(--color-text);margin-bottom:var(--space-2);letter-spacing:-.01em}
+    .empty-state p{font-size:var(--text-sm);max-width:36ch;color:var(--color-text-muted);line-height:1.7}
+    .empty-state-hints{display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-6);align-items:flex-start;text-align:left}
+    .empty-state-hint{display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-xs);color:var(--color-text-muted);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-border)}
+    .empty-state-hint svg{width:13px;height:13px;color:var(--color-primary);flex-shrink:0}
+    .empty-state-hint kbd{font-family:var(--font-mono);font-size:10px;padding:2px 5px;background:var(--color-surface-offset);border:1px solid var(--color-border);border-radius:var(--radius-sm);color:var(--color-text-muted)}
+    .loading-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-5)}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spinner{width:36px;height:36px;border:3px solid var(--color-surface-dynamic);border-top-color:var(--color-primary);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-steps{display:flex;flex-direction:column;gap:var(--space-2);align-items:flex-start}
+    .loading-step{font-size:var(--text-xs);color:var(--color-text-muted);display:flex;align-items:center;gap:var(--space-2)}
+    .loading-step.done{color:var(--color-success)}
+    .loading-step svg{width:12px;height:12px}
+
+    /* RESULT COMPONENTS */
+    .summary-meta .company-name{font-size:var(--text-lg);font-weight:700}
+    .summary-meta .deal-meta{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:3px}
+    .verdict-card{border-radius:var(--radius-lg);padding:var(--space-5);border:1px solid var(--color-border);background:var(--color-surface)}
+    .verdict-hdr{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)}
+    .verdict-icon{width:34px;height:34px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .verdict-icon svg{width:17px;height:17px}
+    .verdict-label-sm{font-size:var(--text-xs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted)}
+    .verdict-val{font-size:var(--text-base);font-weight:700}
+    .verdict-proceed .verdict-icon{background:var(--color-success-highlight);color:var(--color-success)}
+    .verdict-caution .verdict-icon{background:var(--color-gold-highlight);color:var(--color-gold)}
+    .verdict-risk .verdict-icon{background:var(--color-error-highlight);color:var(--color-error)}
+    .score-bar{height:5px;background:var(--color-surface-dynamic);border-radius:var(--radius-full);overflow:hidden;margin-top:var(--space-3)}
+    .score-fill{height:100%;border-radius:var(--radius-full);transition:width 1s cubic-bezier(.16,1,.3,1)}
+    .score-fill.high{background:var(--color-success)}
+    .score-fill.mid{background:var(--color-gold)}
+    .score-fill.low{background:var(--color-error)}
+    .score-labels{display:flex;justify-content:space-between;margin-top:var(--space-2)}
+    .score-labels span{font-size:var(--text-xs);color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+    .confidence-chip{display:inline-flex;align-items:center;gap:6px;font-size:var(--text-xs);font-weight:600;padding:3px var(--space-2);border-radius:var(--radius-full);margin-top:var(--space-3)}
+    .confidence-chip svg{width:12px;height:12px}
+    .confidence-high{background:var(--color-success-highlight);color:var(--color-success)}
+    .confidence-mid{background:var(--color-gold-highlight);color:var(--color-gold)}
+    .confidence-low{background:var(--color-error-highlight);color:var(--color-error)}
+    .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)}
+    .kpi-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4);position:relative}
+    .kpi-label{font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-2);font-weight:500;display:flex;align-items:center;gap:5px}
+    .kpi-value{font-size:var(--text-base);font-weight:700;font-variant-numeric:tabular-nums}
+    .kpi-delta{font-size:var(--text-xs);font-weight:500;padding:2px var(--space-2);border-radius:var(--radius-full);margin-top:var(--space-1);display:inline-block}
+    .kpi-delta.positive{background:var(--color-success-highlight);color:var(--color-success)}
+    .kpi-delta.negative{background:var(--color-error-highlight);color:var(--color-error)}
+    .kpi-delta.neutral{background:var(--color-gold-highlight);color:var(--color-gold)}
+    .src-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;cursor:help}
+    .src-dot.grounded{background:var(--color-success)}
+    .src-dot.inferred{background:var(--color-gold)}
+    .sec-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
+    .sec-card-hdr{padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--color-divider);display:flex;align-items:center;gap:var(--space-3)}
+    .sec-card-hdr svg{width:14px;height:14px}
+    .sec-card-title{font-size:var(--text-sm);font-weight:600;flex:1}
+    .sec-count{font-size:var(--text-xs);color:var(--color-text-faint);font-variant-numeric:tabular-nums}
+    .sec-card-body{padding:var(--space-4) var(--space-5);display:flex;flex-direction:column;gap:var(--space-2)}
+    .finding{display:flex;gap:var(--space-3);align-items:flex-start;padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);font-size:var(--text-sm)}
+    .finding.positive{background:var(--color-success-highlight)}
+    .finding.warning{background:var(--color-warning-highlight)}
+    .finding.risk{background:var(--color-error-highlight)}
+    .finding.neutral{background:var(--color-surface-offset)}
+    .finding-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:6px}
+    .finding.positive .finding-dot{background:var(--color-success)}
+    .finding.warning .finding-dot{background:var(--color-warning)}
+    .finding.risk .finding-dot{background:var(--color-error)}
+    .finding.neutral .finding-dot{background:var(--color-text-faint)}
+    .finding-body{flex:1;min-width:0}
+    .cite{margin-top:var(--space-2)}
+    .cite-toggle{font-size:11px;font-family:var(--font-mono);color:var(--color-text-muted);background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+    .cite-toggle:hover{color:var(--color-primary)}
+    .cite-toggle svg{width:11px;height:11px}
+    .cite-body{display:none;margin-top:var(--space-2);padding:var(--space-2) var(--space-3);border-left:2px solid var(--color-border);background:var(--color-surface-2);border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-family:var(--font-mono);font-size:11px;line-height:1.5;color:var(--color-text-muted);white-space:pre-wrap}
+    .cite-body.open{display:block}
+    .cite-src{display:block;font-size:10px;color:var(--color-text-faint);margin-top:4px}
+    .flag-item,.gap-item{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);font-size:var(--text-sm)}
+    .flag-item{background:var(--color-error-highlight)}
+    .flag-item svg{width:13px;height:13px;color:var(--color-error);flex-shrink:0;margin-top:2px}
+    .flag-item.warning{background:var(--color-warning-highlight)}
+    .flag-item.warning svg{color:var(--color-warning)}
+    .gap-item{background:var(--color-gold-highlight)}
+    .gap-item svg{width:13px;height:13px;color:var(--color-gold);flex-shrink:0;margin-top:2px}
+    .next-steps{display:flex;flex-direction:column;gap:var(--space-3)}
+    .next-step{display:flex;gap:var(--space-3);align-items:flex-start;font-size:var(--text-sm)}
+    .step-num{width:20px;height:20px;border-radius:var(--radius-full);background:var(--color-primary-highlight);color:var(--color-primary);font-size:var(--text-xs);font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums}
+    .ai-note{padding:var(--space-3) var(--space-4);background:var(--color-surface-offset);border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--color-text-muted);display:flex;align-items:flex-start;gap:var(--space-2)}
+    .ai-note svg{width:11px;height:11px;flex-shrink:0;margin-top:1px;color:var(--color-text-faint)}
+    .bench-table{width:100%;border-collapse:collapse;font-size:var(--text-xs)}
+    .bench-table th,.bench-table td{text-align:left;padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--color-divider)}
+    .bench-table th{color:var(--color-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:10px}
+    .bench-table td{font-variant-numeric:tabular-nums}
+    .bench-flag{font-size:10px;font-weight:600;padding:1px 7px;border-radius:var(--radius-full)}
+    .bench-flag.ahead{background:var(--color-success-highlight);color:var(--color-success)}
+    .bench-flag.inline{background:var(--color-gold-highlight);color:var(--color-gold)}
+    .bench-flag.behind{background:var(--color-error-highlight);color:var(--color-error)}
+    .bench-flag.na{background:var(--color-surface-offset);color:var(--color-text-faint)}
+    .lens-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--color-primary);background:var(--color-primary-highlight);padding:3px var(--space-3);border-radius:var(--radius-full);margin-bottom:var(--space-2)}
+    .hitl-banner{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);background:var(--color-gold-highlight);border:1px solid oklch(from var(--color-gold) l c h /.3);font-size:var(--text-xs);color:var(--color-text)}
+    .hitl-banner svg{width:14px;height:14px;color:var(--color-gold);flex-shrink:0;margin-top:1px}
+
+    @media(max-width:900px){
+      .sidebar{display:none}
+      .content-area{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+      .input-panel{border-right:none;border-bottom:1px solid var(--color-border)}
+      .kpi-grid{grid-template-columns:repeat(2,1fr)}
+    }
+
+    .provider-btn.active{background:var(--color-primary-highlight);border-color:var(--color-primary)!important;color:var(--color-primary)}
+    .provider-btn:hover:not(.active){background:var(--color-surface-offset)}
+
+    .sample-row{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-1)}
+    .sample-pill{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);font-size:var(--text-xs);font-weight:500;border-radius:var(--radius-full);border:1px solid var(--color-border);background:var(--color-surface-2);color:var(--color-text-muted);cursor:pointer}
+    .sample-pill:hover{border-color:var(--color-primary);color:var(--color-primary);background:var(--color-primary-highlight)}
+    .sample-pill svg{width:12px;height:12px}
+
+    .upload-error{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-error-highlight);border:1px solid oklch(from var(--color-error) l c h / .25);border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--color-text)}
+    .upload-error svg{width:14px;height:14px;color:var(--color-error);flex-shrink:0;margin-top:1px}
+    .uploaded-file.parsing{background:var(--color-primary-highlight);border-color:oklch(from var(--color-primary) l c h / .25)}
+    .uploaded-file.parsing svg{color:var(--color-primary)}
+
+    .export-wrap{position:relative}
+    .export-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:210px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);box-shadow:var(--shadow-md);padding:var(--space-2);z-index:50;display:none}
+    .export-menu.open{display:block}
+    .export-menu button{width:100%;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);color:var(--color-text);border-radius:var(--radius-sm);background:none;text-align:left}
+    .export-menu button:hover{background:var(--color-surface-offset)}
+    .export-menu button svg{width:14px;height:14px;color:var(--color-text-muted)}
+
+    .memo-section h4{font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-2);letter-spacing:-.005em}
+    .memo-section p{font-size:var(--text-sm);line-height:1.65;color:var(--color-text)}
+    .memo-list{display:flex;flex-direction:column;gap:var(--space-2)}
+    .memo-list-item{display:flex;gap:var(--space-3);font-size:var(--text-sm);line-height:1.55;padding:var(--space-2) 0}
+    .memo-list-item::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--color-primary);flex-shrink:0;margin-top:8px}
+    .question-item{display:flex;gap:var(--space-3);font-size:var(--text-sm);padding:var(--space-3) var(--space-4);background:var(--color-surface-offset);border-radius:var(--radius-md);line-height:1.55}
+    .question-num{font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-primary);font-weight:600;flex-shrink:0;min-width:24px}
+
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);box-shadow:var(--shadow-md);display:flex;align-items:center;gap:var(--space-3);z-index:200;animation:toastIn .25s ease-out}
+    .toast svg{width:14px;height:14px;color:var(--color-success)}
+    @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Modal shell */
+    .modal{display:none;position:fixed;inset:0;background:oklch(0 0 0/.6);z-index:100;align-items:center;justify-content:center;padding:var(--space-4)}
+    .modal.open{display:flex}
+    .modal-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-8);width:100%;max-width:560px;box-shadow:var(--shadow-md);max-height:88dvh;overflow-y:auto}
+    .modal-card.wide{max-width:760px}
+    .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-6)}
+    .modal-x{width:28px;height:28px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)}
+    .modal-x:hover{background:var(--color-surface-offset)}
+    .gov-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-5)}
+    .gov-cell{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-4)}
+    .gov-cell h5{font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-bottom:var(--space-2);display:flex;align-items:center;gap:6px}
+    .gov-cell h5 svg{width:13px;height:13px;color:var(--color-primary)}
+    .gov-cell p{font-size:var(--text-xs);line-height:1.55;color:var(--color-text)}
+    .audit-table{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--font-mono)}
+    .audit-table th,.audit-table td{text-align:left;padding:var(--space-2);border-bottom:1px solid var(--color-divider);white-space:nowrap}
+    .audit-table th{color:var(--color-text-muted);font-weight:600}
+    .eval-table{width:100%;border-collapse:collapse;font-size:var(--text-xs)}
+    .eval-table th,.eval-table td{text-align:left;padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--color-divider)}
+    .eval-table th{color:var(--color-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:10px}
+    .eval-pass{color:var(--color-success);font-weight:700}
+    .eval-fail{color:var(--color-error);font-weight:700}
+    .eval-summary{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);margin-bottom:var(--space-4);font-size:var(--text-sm);font-weight:600}
+    .eval-summary.ok{background:var(--color-success-highlight);color:var(--color-success)}
+    .eval-summary.bad{background:var(--color-error-highlight);color:var(--color-error)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none" aria-label="DiligenceAI">
+        <defs>
+          <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="currentColor" stop-opacity=".25"/>
+            <stop offset="1" stop-color="currentColor" stop-opacity=".05"/>
+          </linearGradient>
+        </defs>
+        <rect x="1" y="1" width="30" height="30" rx="7" fill="url(#logoGrad)" stroke="currentColor" stroke-opacity=".35" stroke-width="1"/>
+        <circle cx="14" cy="14" r="6.5" stroke="currentColor" stroke-width="2" opacity=".9"/>
+        <circle cx="14" cy="14" r="2.2" fill="currentColor" opacity=".55"/>
+        <path d="M19.2 19.2 L25 25" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M11 14.2 L13.2 16.4 L17.2 11.6" stroke="var(--color-bg)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>
+      </svg>
+      <div><div class="logo-text">DiligenceAI</div><div class="logo-sub">Deal Intelligence</div></div>
+    </div>
+    <div class="sidebar-sec">Workspace</div>
+    <div class="nav-item active"><i data-lucide="file-search"></i> Due Diligence</div>
+    <div class="nav-item" onclick="openWorkspaces()"><i data-lucide="clock"></i> Saved Analyses</div>
+    <div class="nav-item" onclick="loadSample('saas')"><i data-lucide="layout-template"></i> Sample Deals</div>
+    <div class="sidebar-sec">Trust &amp; Controls</div>
+    <div class="nav-item" onclick="openGovernance()"><i data-lucide="shield-check"></i> Governance</div>
+    <div class="nav-item" onclick="runEvalUI()"><i data-lucide="flask-conical"></i> Evaluation</div>
+    <div class="sidebar-sec">Settings</div>
+    <div class="nav-item" onclick="openSettings()"><i data-lucide="plug"></i> AI Provider</div>
+    <div class="sidebar-bottom">
+      <div class="avatar">TJ<span class="avatar-status" aria-hidden="true"></span></div>
+      <div class="av-info"><div class="av-name">Terrell Johnson</div><div class="av-role"><span class="status-dot"></span> Active session</div></div>
+      <button class="theme-btn" data-theme-toggle aria-label="Toggle theme"><i data-lucide="sun"></i></button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-crumb">Workspace ›</span>
+      <span class="topbar-title">Due Diligence Summarizer</span>
+      <span class="badge" id="modeBadge" style="margin-left:var(--space-3);">Heuristic Engine</span>
+      <div style="margin-left:auto;display:flex;gap:var(--space-2);align-items:center;">
+        <div class="export-wrap" id="exportWrap" style="display:none;">
+          <button class="btn btn-ghost btn-sm" id="exportBtn" onclick="toggleExportMenu(event)"><i data-lucide="download"></i> Export <i data-lucide="chevron-down" style="width:12px;height:12px;"></i></button>
+          <div class="export-menu" id="exportMenu">
+            <button onclick="exportMarkdown()"><i data-lucide="file-text"></i> Memo as Markdown</button>
+            <button onclick="exportPDF()"><i data-lucide="file-down"></i> Memo as PDF</button>
+            <button onclick="copyMarkdownToClipboard()"><i data-lucide="clipboard-copy"></i> Copy memo to clipboard</button>
+            <button onclick="saveWorkspace()"><i data-lucide="save"></i> Save analysis (local)</button>
+            <button onclick="exportAudit()"><i data-lucide="scroll-text"></i> Audit log (JSON)</button>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="openGovernance()"><i data-lucide="shield-check"></i> Governance</button>
+        <button class="btn btn-ghost btn-sm" onclick="openSettings()"><i data-lucide="settings"></i> Settings</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetAll()"><i data-lucide="refresh-ccw"></i> New</button>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <!-- LEFT -->
+      <div class="input-panel">
+        <div class="panel-hdr">
+          <span class="panel-hdr-step">Step 1</span>
+          <div class="panel-hdr-text">
+            <div class="panel-title">Document Input</div>
+            <div class="panel-sub">Upload one or more CIMs / decks, or paste raw text</div>
+          </div>
+        </div>
+        <div class="input-body">
+          <div class="upload-zone" id="uploadZone" onclick="triggerUpload()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event)">
+            <div class="upload-icon"><i data-lucide="upload-cloud" style="width:36px;height:36px;"></i></div>
+            <p><span>Click to upload</span> or drag &amp; drop</p>
+            <p class="hint">PDF, DOCX, TXT, MD · up to 15MB each · multiple files supported</p>
+          </div>
+          <div id="docList" class="doc-list" style="display:none;"></div>
+          <div id="uploadError" style="display:none;"></div>
+          <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md" multiple style="display:none;" onchange="handleFileUpload(this)"/>
+          <div class="or-row"><div class="divider"></div><span>or</span><div class="divider"></div></div>
+          <div class="form-group">
+            <label class="form-label">Paste CIM / Document Text</label>
+            <textarea class="form-textarea" id="docText" placeholder="Paste CIM text, earnings call transcript, or deal memo here..."></textarea>
+            <div class="form-label" style="margin-top:var(--space-2);">Sample Deal Scenarios</div>
+            <div class="sample-row">
+              <button class="sample-pill" onclick="loadSample('saas')"><i data-lucide="cloud"></i> SaaS Growth Equity</button>
+              <button class="sample-pill" onclick="loadSample('marketplace')"><i data-lucide="shopping-bag"></i> Consumer Marketplace</button>
+              <button class="sample-pill" onclick="loadSample('healthcare')"><i data-lucide="stethoscope"></i> Healthcare LBO</button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="form-group">
+            <label class="form-label">Company / Deal Name</label>
+            <input class="form-input" id="companyName" type="text" placeholder="e.g. TechCo Inc. — Growth Equity $120M"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Deal Type (sets the analytical lens)</label>
+            <select class="form-select" id="dealType">
+              <option value="pe_buyout">PE Buyout / LBO</option>
+              <option value="growth_equity">Growth Equity</option>
+              <option value="strategic_ma">Strategic M&amp;A</option>
+              <option value="vc_series">Venture / Series Round</option>
+              <option value="ipo_review">IPO Review</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sector Benchmark Set</label>
+            <select class="form-select" id="sector">
+              <option value="saas">B2B SaaS / Software</option>
+              <option value="marketplace">Consumer / Marketplace</option>
+              <option value="healthcare">Healthcare Services</option>
+              <option value="generic">Generic / Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Analysis Focus Areas</label>
+            <div class="focus-areas">
+              <div class="focus-tag selected" onclick="toggleFocus(this)">Revenue Growth</div>
+              <div class="focus-tag selected" onclick="toggleFocus(this)">Risk Flags</div>
+              <div class="focus-tag selected" onclick="toggleFocus(this)">Competitive Position</div>
+              <div class="focus-tag" onclick="toggleFocus(this)">Management Team</div>
+              <div class="focus-tag" onclick="toggleFocus(this)">Unit Economics</div>
+              <div class="focus-tag" onclick="toggleFocus(this)">Valuation</div>
+              <div class="focus-tag" onclick="toggleFocus(this)">Data Gaps</div>
+            </div>
+          </div>
+        </div>
+        <div class="input-footer">
+          <label class="consent-row">
+            <input type="checkbox" id="consentCheck"/>
+            <span id="consentLabel">I am authorized to process these documents. <strong>Heuristic mode runs fully in-browser — no data leaves this device.</strong></span>
+          </label>
+          <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">
+            <i data-lucide="zap"></i> Run Due Diligence Analysis
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="output-panel">
+        <div class="tab-bar" id="tabBar" style="display:none;">
+          <button class="tab-btn active" onclick="switchTab(this,'overview')">Overview</button>
+          <button class="tab-btn" onclick="switchTab(this,'memo')">Full Memo</button>
+          <button class="tab-btn" onclick="switchTab(this,'valuation')">Valuation</button>
+          <button class="tab-btn" onclick="switchTab(this,'risks')">Risk Flags</button>
+          <button class="tab-btn" onclick="switchTab(this,'gaps')">Data Gaps</button>
+          <button class="tab-btn" onclick="switchTab(this,'questions')">Questions</button>
+          <button class="tab-btn" onclick="switchTab(this,'nextsteps')">Next Steps</button>
+        </div>
+        <div class="output-body" id="outputBody">
+          <div class="empty-state">
+            <div class="empty-state-mark">
+              <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
+                <circle cx="14" cy="14" r="7" stroke="currentColor" stroke-width="2"/>
+                <circle cx="14" cy="14" r="2.2" fill="currentColor"/>
+                <path d="M19.5 19.5 L26 26" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+                <path d="M11 14.2 L13.2 16.4 L17.2 11.6" stroke="var(--color-bg)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3>Ready when you are</h3>
+            <p>Drop a CIM, deal memo, or earnings transcript — get a structured, source-grounded diligence summary in seconds. Works with no API key in heuristic mode.</p>
+            <div class="empty-state-hints">
+              <div class="empty-state-hint"><i data-lucide="files"></i> Ingest multiple PDFs / DOCX with per-claim source citations</div>
+              <div class="empty-state-hint"><i data-lucide="sparkles"></i> Try a <kbd>sample deal</kbd> to see the output format</div>
+              <div class="empty-state-hint"><i data-lucide="shield-check"></i> Add an API key in Settings for live LLM analysis</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   DiligenceAI — core engine
+   Pure analysis functions are exposed on window.DiligenceEngine so they can
+   be unit-tested headlessly (see the built-in Evaluation harness).
+   ========================================================================= */
+lucide.createIcons();
+
+// Theme
+(function(){
+  const t=document.querySelector('[data-theme-toggle]'),r=document.documentElement;
+  let d='dark';r.setAttribute('data-theme',d);
+  if(t)t.addEventListener('click',()=>{
+    d=d==='dark'?'light':'dark';r.setAttribute('data-theme',d);
+    t.innerHTML=d==='dark'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  });
+})();
+
+// ── State ────────────────────────────────────────────────────────────────
+let result = null;
+let docs = [];                 // [{name, size, text, hash, parsing}]
+let apiKey = '';
+let aiProvider = 'groq';
+let usingAI = false;
+let auditLog = [];             // session audit trail
+
+// ── File upload + parsing (multi-doc) ──────────────────────────────────────
+const MAX_FILE_BYTES = 15 * 1024 * 1024;
+const SUPPORTED_EXT = ['pdf','docx','txt','md'];
+
+function triggerUpload(){document.getElementById('fileInput').click();}
+function dragOver(e){e.preventDefault();document.getElementById('uploadZone').classList.add('drag-over');}
+function dragLeave(){document.getElementById('uploadZone').classList.remove('drag-over');}
+function handleDrop(e){e.preventDefault();dragLeave();[...e.dataTransfer.files].forEach(addFile);}
+function handleFileUpload(i){[...i.files].forEach(addFile); i.value='';}
+
+function formatBytes(b){
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(0) + ' KB';
+  return (b/1024/1024).toFixed(1) + ' MB';
+}
+
+// Small, dependency-free 32-bit hash for audit fingerprinting (not crypto).
+function quickHash(str){
+  let h = 0x811c9dc5;
+  for (let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return ('00000000'+(h>>>0).toString(16)).slice(-8);
+}
+
+function showUploadError(msg){
+  const el = document.getElementById('uploadError');
+  el.innerHTML = '<div class="upload-error"><i data-lucide="alert-circle"></i><span>'+msg+'</span></div>';
+  el.style.display = 'block';
+  lucide.createIcons();
+  setTimeout(()=>{ el.style.display='none'; el.innerHTML=''; }, 6000);
+}
+function clearUploadError(){ const el=document.getElementById('uploadError'); el.style.display='none'; el.innerHTML=''; }
+
+function addFile(f){
+  clearUploadError();
+  const ext = (f.name.split('.').pop()||'').toLowerCase();
+  if (!SUPPORTED_EXT.includes(ext)) { showUploadError('Unsupported file ".'+ext+'". Use PDF, DOCX, TXT, or MD.'); return; }
+  if (f.size > MAX_FILE_BYTES) { showUploadError(f.name+' is '+formatBytes(f.size)+' — max 15 MB per file.'); return; }
+  if (f.size === 0) { showUploadError(f.name+' appears to be empty.'); return; }
+
+  const entry = {name:f.name, size:f.size, text:'', hash:'', parsing:true};
+  docs.push(entry);
+  renderDocList();
+  parseFile(f).then(text => {
+    if (!text || !text.trim()) { showUploadError('No readable text in '+f.name+' (scanned image / encrypted PDF?). Paste text manually.'); docs = docs.filter(d=>d!==entry); renderDocList(); return; }
+    entry.text = text; entry.hash = quickHash(text); entry.parsing = false;
+    syncTextarea();
+    if (!document.getElementById('companyName').value) document.getElementById('companyName').value = f.name.replace(/\.[^.]+$/,'');
+    autoDetectDealType();
+    renderDocList();
+  }).catch(err => {
+    showUploadError("Couldn't parse "+f.name+': '+(err.message||'unknown error'));
+    docs = docs.filter(d=>d!==entry); renderDocList();
+  });
+}
+
+function renderDocList(){
+  const wrap = document.getElementById('docList');
+  if (!docs.length){ wrap.style.display='none'; wrap.innerHTML=''; return; }
+  wrap.style.display='flex';
+  wrap.innerHTML = docs.map((d,i)=>{
+    const icon = d.parsing ? 'loader' : 'file-check-2';
+    const cls = d.parsing ? 'uploaded-file parsing' : 'uploaded-file';
+    const iconStyle = d.parsing ? 'style="animation:spin .8s linear infinite;"' : '';
+    const status = d.parsing ? '<span class="uploaded-file-size">Parsing…</span>'
+      : '<span class="uploaded-file-size">'+formatBytes(d.size)+' · '+d.text.length.toLocaleString()+' chars · #'+d.hash+'</span>';
+    return '<div class="'+cls+'"><i data-lucide="'+icon+'" '+iconStyle+'></i><span class="uploaded-file-name">'+escapeHTML(d.name)+'</span>'+status+'<button style="padding:2px;color:var(--color-text-muted)" onclick="removeDoc('+i+')" aria-label="Remove"><i data-lucide="x" style="width:13px;height:13px;"></i></button></div>';
+  }).join('');
+  lucide.createIcons();
+}
+function removeDoc(i){ docs.splice(i,1); renderDocList(); syncTextarea(); }
+
+// Combined corpus = pasted text + all parsed docs, each tagged for provenance.
+function syncTextarea(){
+  // Only mirror parsed docs into the textarea when the user hasn't typed their own.
+  if (docs.length && !document.getElementById('docText').dataset.userEdited){
+    document.getElementById('docText').value = buildCorpus(false);
+  }
+}
+function buildCorpus(includePasted){
+  const parts = [];
+  docs.filter(d=>d.text).forEach((d,i)=> parts.push('=== [Doc '+(i+1)+': '+d.name+'] ===\n'+d.text));
+  const pasted = document.getElementById('docText').value.trim();
+  if (includePasted && pasted && !pasted.startsWith('=== [Doc 1')) parts.unshift(pasted);
+  return parts.join('\n\n');
+}
+document.getElementById('docText').addEventListener('input', e=>{ e.target.dataset.userEdited = '1'; });
+
+async function parseFile(f){
+  const ext = (f.name.split('.').pop()||'').toLowerCase();
+  if (ext === 'txt' || ext === 'md') return await f.text();
+  if (ext === 'docx') {
+    if (typeof mammoth === 'undefined') throw new Error('DOCX parser failed to load');
+    const buf = await f.arrayBuffer();
+    const r = await mammoth.extractRawText({arrayBuffer: buf});
+    return r.value || '';
+  }
+  if (ext === 'pdf') {
+    if (typeof pdfjsLib === 'undefined') throw new Error('PDF parser failed to load');
+    const buf = await f.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+    const maxPages = Math.min(pdf.numPages, 120);
+    const parts = [];
+    for (let i=1;i<=maxPages;i++){ const p=await pdf.getPage(i); const c=await p.getTextContent(); parts.push(c.items.map(it=>it.str).join(' ')); }
+    let text = parts.join('\n\n');
+    if (pdf.numPages > 120) text += '\n\n[Note: only first 120 of '+pdf.numPages+' pages parsed]';
+    return text;
+  }
+  throw new Error('Unsupported file type');
+}
+function toggleFocus(el){el.classList.toggle('selected');}
+
+// Light deal-type auto-detect from corpus keywords (analyst can override).
+function autoDetectDealType(){
+  const t = buildCorpus(true).toLowerCase();
+  const sel = document.getElementById('dealType');
+  if (sel.dataset.userSet) return;
+  if (/lbo|buyout|leverage|net debt|turns of/.test(t)) sel.value='pe_buyout';
+  else if (/series [a-e]|seed|venture|pre-money/.test(t)) sel.value='vc_series';
+  else if (/arr|growth equity/.test(t)) sel.value='growth_equity';
+  const secSel = document.getElementById('sector');
+  if (!secSel.dataset.userSet){
+    if (/clinic|patient|payer|medicare|hospital|hipaa/.test(t)) secSel.value='healthcare';
+    else if (/marketplace|gmv|take rate|buyer|seller/.test(t)) secSel.value='marketplace';
+    else if (/arr|saas|nrr|seats/.test(t)) secSel.value='saas';
+  }
+}
+document.getElementById('dealType').addEventListener('change', e=>{ e.target.dataset.userSet='1'; });
+document.getElementById('sector').addEventListener('change', e=>{ e.target.dataset.userSet='1'; });
+
+/* =========================================================================
+   METRIC EXTRACTION + DERIVATION (source-grounded)
+   Every metric carries a provenance snippet so the UI can cite it.
+   ========================================================================= */
+
+// Return the sentence/line containing the first match — used as a citation.
+function findSnippet(text, re){
+  const m = text.match(re);
+  if (!m) return null;
+  const idx = m.index;
+  let start = text.lastIndexOf('\n', idx); start = Math.max(start, text.lastIndexOf('.', idx));
+  let end = text.indexOf('\n', idx); const dot = text.indexOf('.', idx+m[0].length);
+  if (end === -1) end = text.length;
+  if (dot !== -1 && dot < end) end = dot+1;
+  let snip = text.slice(start+1, end).trim().replace(/\s+/g,' ');
+  if (snip.length > 220) snip = snip.slice(0,217)+'…';
+  return snip;
+}
+
+function num(x){ const n=parseFloat(String(x).replace(/,/g,'')); return isNaN(n)?null:n; }
+
+// Parse a money token like "$240M", "1.2B", "42 M" into millions.
+function moneyToM(token){
+  if (!token) return null;
+  const m = String(token).replace(/[, ]/g,'').match(/\$?([\d.]+)\s*([bmk])?/i);
+  if (!m) return null;
+  let v = parseFloat(m[1]); if (isNaN(v)) return null;
+  const u = (m[2]||'m').toLowerCase();
+  if (u==='b') v*=1000; else if (u==='k') v/=1000;
+  return v;
+}
+
+const METRIC_PATTERNS = {
+  arr:        [/ARR[:\s]+\$?([\d.]+\s*[MBK]?)/i, /\$([\d.]+\s*[MBK]?)\s+ARR/i, /Annual Recurring Revenue[:\s]+\$?([\d.]+\s*[MBK]?)/i],
+  revenue:    [/Revenue[:\s]+\$?([\d.]+\s*[MBK]?)/i, /Net Revenue[:\s]+\$?([\d.]+\s*[MBK]?)/i],
+  revenueGrowth:[/Net Revenue[^\n]*?up\s+(\d+(?:\.\d+)?)%\s*YoY/i, /\bRevenue[^\n]*?up\s+(\d+(?:\.\d+)?)%\s*YoY/i, /ARR[^\n]*?up\s+(\d+(?:\.\d+)?)%\s*YoY/i, /up\s+(\d+(?:\.\d+)?)%\s*YoY/i, /(\d+(?:\.\d+)?)%\s*(?:YoY|year[- ]over[- ]year)/i],
+  grossMargin:[/Gross\s+Margin[:\s]+(\d+(?:\.\d+)?)%/i, /\bGM[:\s]+(\d+(?:\.\d+)?)%/i],
+  nrr:        [/Net\s+Revenue\s+Retention\s*\(NRR\)[:\s]+(\d+(?:\.\d+)?)%/i, /\bNRR[:\s]+(\d+(?:\.\d+)?)%/i],
+  ebitda:     [/EBITDA[:\s]+\$?(-?[\d.]+\s*[MBK]?)/i],
+  ebitdaMargin:[/EBITDA[^.]*?\((\d+(?:\.\d+)?)%\s*margin\)/i, /EBITDA margin[:\s]+(\d+(?:\.\d+)?)%/i],
+  ev:         [/\$([\d.]+\s*[MBK]?)\s*EV/i, /EV[:\s]+\$?([\d.]+\s*[MBK]?)/i, /Enterprise Value[:\s]+\$?([\d.]+\s*[MBK]?)/i, /\$([\d.]+[MBK]?)\s*EV\b/i],
+  evMultiple: [/\(([\d.]+)x\s*(?:trailing\s*)?EBITDA\)/i, /([\d.]+)x\s*(?:trailing\s*)?EBITDA/i],
+  netDebt:    [/Net\s+debt[:\s]+\$?([\d.]+\s*[MBK]?)/i],
+  leverage:   [/leverage[^.\d]*([\d.]+)x/i, /([\d.]+)x\s*at close/i],
+  cacPayback: [/CAC Payback[^:]*[:\s]+(\d+(?:\.\d+)?)\s*months?/i],
+  ltvCac:     [/LTV\/?CAC\s*=?\s*([\d.]+)x?/i, /LTV:CAC\s*=?\s*([\d.]+)/i],
+  runway:     [/(\d+)\s*[- ]?month runway/i, /([\d.]+)\s*months?\s*runway/i],
+  takeRate:   [/take rate\s*~?\s*(\d+(?:\.\d+)?)%/i],
+  gmv:        [/GMV[:\s]+\$?([\d.]+\s*[MBK]?)/i]
+};
+
+function extractMetrics(text){
+  const out = {};
+  for (const key in METRIC_PATTERNS){
+    let matched = null, snippet = null;
+    for (const re of METRIC_PATTERNS[key]){
+      const m = text.match(re);
+      if (m){ matched = m[1]; snippet = findSnippet(text, re); break; }
+    }
+    if (matched != null){
+      out[key] = { raw: matched.trim(), src: snippet, grounded: true };
+    }
+  }
+  return out;
+}
+
+function fmtMoney(token){
+  if (!token) return 'N/A';
+  const raw = String(token).trim();
+  if (/^\$/.test(raw)) return raw.toUpperCase().replace(/\s+/g,'');
+  if (/^\d/.test(raw)) return ('$'+raw).toUpperCase().replace(/\s+/g,'');
+  return raw;
+}
+
+// Derived analytics computed from extracted metrics (transparent, auditable).
+function deriveMetrics(m){
+  const d = {};
+  const arrM = m.arr ? moneyToM(m.arr.raw) : (m.revenue ? moneyToM(m.revenue.raw) : null);
+  const evM  = m.ev ? moneyToM(m.ev.raw) : null;
+  const ebitdaM = m.ebitda ? moneyToM(m.ebitda.raw) : null;
+  const ndM = m.netDebt ? moneyToM(m.netDebt.raw) : null;
+  const growth = m.revenueGrowth ? num(m.revenueGrowth.raw) : null;
+  const em = m.ebitdaMargin ? num(m.ebitdaMargin.raw) : null;
+
+  if (evM && ebitdaM && ebitdaM>0) d.evEbitda = { value:+(evM/ebitdaM).toFixed(1), unit:'x', label:'EV / EBITDA', src:'derived: '+fmtMoney(m.ev.raw)+' EV ÷ '+fmtMoney(m.ebitda.raw)+' EBITDA' };
+  else if (m.evMultiple) d.evEbitda = { value:num(m.evMultiple.raw), unit:'x', label:'EV / EBITDA', src:m.evMultiple.src, grounded:true };
+  if (evM && arrM && arrM>0) d.evArr = { value:+(evM/arrM).toFixed(1), unit:'x', label:'EV / ARR', src:'derived: '+fmtMoney(m.ev.raw)+' EV ÷ '+fmtMoney((m.arr||m.revenue).raw) };
+  if (growth!=null && em!=null) d.ruleOf40 = { value:Math.round(growth+em), unit:'', label:'Rule of 40 (growth + EBITDA margin)', src:'derived: '+growth+'% growth + '+em+'% EBITDA margin' };
+  if (m.leverage) d.leverage = { value:num(m.leverage.raw), unit:'x', label:'Net leverage (stated at close)', src:m.leverage.src, grounded:true };
+  else if (ndM!=null && ebitdaM && ebitdaM>0) d.leverage = { value:+(ndM/ebitdaM).toFixed(1), unit:'x', label:'Net leverage (Net debt / EBITDA)', src:'derived: '+fmtMoney(m.netDebt.raw)+' net debt ÷ '+fmtMoney(m.ebitda.raw)+' EBITDA' };
+  return d;
+}
+
+/* =========================================================================
+   SECTOR BENCHMARKS + DEAL-TYPE LENSES
+   ========================================================================= */
+const BENCHMARKS = {
+  saas:        { 'Revenue Growth':[30,'%','higher'], 'Gross Margin':[75,'%','higher'], 'NRR':[110,'%','higher'], 'Rule of 40':[40,'','higher'], 'EV / ARR':[8,'x','context'] },
+  marketplace: { 'Revenue Growth':[35,'%','higher'], 'Gross Margin':[60,'%','higher'], 'Take Rate':[12,'%','higher'] },
+  healthcare:  { 'Revenue Growth':[8,'%','higher'], 'EBITDA Margin':[15,'%','higher'], 'Net Leverage':[6,'x','lower'], 'EV / EBITDA':[12,'x','context'] },
+  generic:     { 'Revenue Growth':[15,'%','higher'], 'Gross Margin':[50,'%','higher'] }
+};
+
+function buildBenchmarkRows(metrics, derived, sector){
+  const bset = BENCHMARKS[sector] || BENCHMARKS.generic;
+  const actuals = {
+    'Revenue Growth': metrics.revenueGrowth?num(metrics.revenueGrowth.raw):null,
+    'Gross Margin': metrics.grossMargin?num(metrics.grossMargin.raw):null,
+    'NRR': metrics.nrr?num(metrics.nrr.raw):null,
+    'EBITDA Margin': metrics.ebitdaMargin?num(metrics.ebitdaMargin.raw):null,
+    'Take Rate': metrics.takeRate?num(metrics.takeRate.raw):null,
+    'Rule of 40': derived.ruleOf40?derived.ruleOf40.value:null,
+    'Net Leverage': derived.leverage?derived.leverage.value:null,
+    'EV / ARR': derived.evArr?derived.evArr.value:null,
+    'EV / EBITDA': derived.evEbitda?derived.evEbitda.value:null
+  };
+  const rows = [];
+  for (const metric in bset){
+    const [bench, unit, dir] = bset[metric];
+    const actual = actuals[metric];
+    let flag='na', label='No data';
+    if (actual!=null){
+      if (dir==='context'){ flag='inline'; label='Context: vs ~'+bench+unit; }
+      else if (dir==='higher'){ flag = actual>=bench*1.1?'ahead':actual>=bench*0.9?'inline':'behind'; label = flag==='ahead'?'Ahead of benchmark':flag==='inline'?'In line':'Below benchmark'; }
+      else { flag = actual<=bench*0.9?'ahead':actual<=bench*1.1?'inline':'behind'; label = flag==='ahead'?'Conservative':flag==='inline'?'In line':'Elevated'; }
+    }
+    rows.push({ metric, actual: actual!=null?(actual+unit):'—', bench: bench+unit, flag, label });
+  }
+  return rows;
+}
+
+const DEAL_LENS = {
+  pe_buyout: { name:'LBO / Buyout lens', focus:'cash generation, leverage capacity, and EBITDA quality',
+    questions:['What is the normalized, run-rate EBITDA after one-time and owner add-backs?','What free-cash-flow conversion supports the proposed leverage and debt service?','What is the realistic deleveraging path and covenant headroom under a downside case?','Which costs are genuinely variable if revenue contracts 15–20%?'] },
+  growth_equity: { name:'Growth Equity lens', focus:'efficient growth, retention, and path to profitability',
+    questions:['What is the Rule of 40 trend and the credible path to it over the plan?','How does NRR decompose into expansion vs. contraction vs. churn by cohort?','What is CAC payback by channel, and is it lengthening as you move upmarket?','How many quarters of runway exist, and what milestones must hit before the next raise?'] },
+  strategic_ma: { name:'Strategic M&A lens', focus:'synergy realization, integration risk, and standalone vs. combined value',
+    questions:['What revenue and cost synergies are underwritten, and over what timeline?','What are the one-time integration costs and Day-1 dis-synergy risks?','What customer or channel overlap could trigger attrition post-close?','What contracts contain change-of-control or assignment restrictions?'] },
+  vc_series: { name:'Venture lens', focus:'market size, cohort economics, and capital efficiency',
+    questions:['What does the retention curve look like beyond 12 months by sign-up vintage?','What is the bottoms-up TAM and the credible path to a fund-returning outcome?','What is the burn multiple (net burn ÷ net new ARR)?','What is the moat once well-funded incumbents respond?'] },
+  ipo_review: { name:'IPO Readiness lens', focus:'predictability, governance, and public-market comparability',
+    questions:['How predictable is the forecast, and what is guidance-beat history?','Are controls, audit, and board governance public-company ready?','How do growth and margins compare to the public comp set?','What is the lock-up / float structure and insider concentration?'] }
+};
+
+/* =========================================================================
+   SCORING + QoE
+   ========================================================================= */
+function computeScore(metrics, derived, text){
+  let score = 42;
+  const g = metrics.revenueGrowth?num(metrics.revenueGrowth.raw):null;
+  const m = metrics.grossMargin?num(metrics.grossMargin.raw):null;
+  const n = metrics.nrr?num(metrics.nrr.raw):null;
+  if (g!=null && g>0) score += g>=80?18:g>=60?14:g>=40?10:g>=20?5:2;
+  if (m!=null && m>0) score += m>=80?14:m>=70?11:m>=60?8:m>=50?4:0;
+  if (n!=null && n>0) score += n>=130?14:n>=120?12:n>=110?9:n>=100?5:0;
+  if (derived.ruleOf40 && derived.ruleOf40.value>=40) score += 6;
+  if (derived.leverage && derived.leverage.value>6) score -= 6;
+  if (/soc 2|soc2/i.test(text)) score += 3;
+  if (/hipaa|gdpr|hitrust/i.test(text)) score += 2;
+  if (/patent pending|patents held|patent/i.test(text)) score += 2;
+  if (/customer concentration|top \d+ customers represent|top \d+ = /i.test(text)) score -= 8;
+  if (/key.?man risk|key.?person/i.test(text)) score -= 6;
+  if (/single cloud|no multi.cloud|aws.+dependency/i.test(text)) score -= 3;
+  if (/burn rate|ebitda:\s*-\$?/i.test(text)) score -= 4;
+  if (/sales cycle elongation|sales cycle/i.test(text)) score -= 2;
+  if (/reimbursement|cms.+cut|rate cut/i.test(text)) score -= 4;
+  if (/counterfeit|dispute rate/i.test(text)) score -= 3;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function qoeFlags(text){
+  const tl = text.toLowerCase(), flags = [];
+  if (/add-?back|adjusted ebitda|normaliz/i.test(text)) flags.push({t:'Adjusted/normalized EBITDA referenced — quantify and scrutinize each add-back; owner comp and one-time items often inflate the multiple base.', s:'warning'});
+  if (/quality.?of.?earnings|qofe|q of e/i.test(text)) flags.push({t:'Management flags QoE not yet validated — commission an independent QoE before pricing.', s:'risk'});
+  if (tl.includes('revenue recognition')||tl.includes('asc 606')) flags.push({t:'Revenue-recognition policy is material to reported growth — confirm ASC 606 treatment and deferred-revenue roll-forward.', s:'warning'});
+  if (/concentration|top \d+ customers|top \d+ =/i.test(text)) flags.push({t:'Customer concentration — a small set of accounts drives an outsized share of revenue; stress-test loss of the top 1–2.', s:'risk'});
+  if (/one-?time|non-recurring/i.test(text)) flags.push({t:'One-time / non-recurring items present — strip from run-rate before applying the multiple.', s:'warning'});
+  return flags;
+}
+
+/* =========================================================================
+   HEURISTIC ANALYZER (no API key required) — fully source-grounded
+   ========================================================================= */
+function analyze(text, company, dealType, sector){
+  const tl = text.toLowerCase();
+  const metrics = extractMetrics(text);
+  const derived = deriveMetrics(metrics);
+  const score = computeScore(metrics, derived, text);
+  const verdict = score>=75?'proceed':score>=55?'caution':'risk';
+
+  // Risk flags with citations
+  const risks=[];
+  const pushRisk=(re,t,s)=>{ if(re.test(text)){ risks.push({t,s,src:findSnippet(text,re)}); } };
+  pushRisk(/concentration|top \d+ customers represent|top \d+ =/i,'Customer concentration — a small set of accounts drives an outsized share of revenue.','warning');
+  pushRisk(/key.?man|key.?person/i,'Key-person dependency in leadership or IP ownership.','risk');
+  pushRisk(/aws.+dependency|single cloud|no multi.cloud/i,'Single-cloud dependency — no multi-cloud failover strategy disclosed.','warning');
+  pushRisk(/ebitda:\s*-|burn rate/i,'Pre-profitability; burn rate and runway require validation against the plan.','warning');
+  pushRisk(/microsoft|google workspace|hyperscaler/i,'Hyperscaler incumbents entering the adjacent space.','risk');
+  pushRisk(/sales cycle/i,'Enterprise sales-cycle elongation signals GTM friction at higher ACV.','warning');
+  pushRisk(/payer|cms|reimbursement/i,'Reimbursement / payer-mix risk — rate changes can materially compress margin.','risk');
+  pushRisk(/counterfeit|trust & safety|trust and safety|dispute rate/i,'Trust & safety exposure — counterfeit or dispute rates trending unfavorably.','warning');
+  pushRisk(/paid acquisition|cac inflation|meta|tiktok/i,'Paid-acquisition reliance creates CAC-inflation exposure.','warning');
+  pushRisk(/certificate of need|regulatory|licens/i,'Regulatory / licensing exposure across operating geographies.','warning');
+  if (derived.leverage && derived.leverage.value>6) risks.push({t:'Proposed leverage of '+derived.leverage.value+'x exceeds a conservative 6x ceiling — limited downside cushion.', s:'risk', src:derived.leverage.src});
+  if(!risks.length)risks.push({t:'No material risk flags surfaced in pattern scan — deeper operational diligence recommended.',s:'neutral',src:null});
+
+  // QoE
+  qoeFlags(text).forEach(f=>{ if(!risks.some(r=>r.t===f.t)) risks.push(f); });
+
+  // Data gaps
+  const gaps=[];
+  const pushGap=(re,g)=>{ if(re.test(text)) gaps.push({t:g, src:findSnippet(text,re)}); };
+  pushGap(/churn.*(not provided|not disclosed)|cohort.*not/i,'Cohort-level churn / gross churn by vintage not provided.');
+  pushGap(/unit economics.*(not disclosed|not provided|by vertical)/i,'Unit economics by vertical / segment not disclosed.');
+  pushGap(/international.*(unclear|not separately)/i,'International revenue pipeline lacks specificity.');
+  pushGap(/quality.?of.?earnings|qofe/i,'Quality-of-Earnings adjustments not yet validated.');
+  pushGap(/payer.?contract|rate card/i,'Detailed payer-contract rate cards withheld.');
+  if (gaps.length<3) gaps.push({t:'Management equity rollover commitments and vesting schedules not provided.', src:null});
+  if (gaps.length<4) gaps.push({t:'Revenue-recognition methodology audit trail not independently validated.', src:null});
+
+  // Investment highlights with citations
+  const positives=[];
+  const n = metrics.nrr?num(metrics.nrr.raw):null;
+  const g = metrics.revenueGrowth?num(metrics.revenueGrowth.raw):null;
+  const m = metrics.grossMargin?num(metrics.grossMargin.raw):null;
+  if(n!=null&&n>110)positives.push({t:'NRR of '+n+'% indicates strong product-market fit and net expansion.', src:metrics.nrr.src});
+  if(g!=null&&g>50)positives.push({t:g+'% YoY revenue growth demonstrates a scalable GTM motion.', src:metrics.revenueGrowth.src});
+  if(m!=null&&m>70)positives.push({t:'Gross margin of '+m+'% sits at or above the sector benchmark.', src:metrics.grossMargin.src});
+  if(derived.ruleOf40 && derived.ruleOf40.value>=40)positives.push({t:'Rule of 40 at '+derived.ruleOf40.value+' — efficient growth.', src:derived.ruleOf40.src});
+  if(/soc 2|hipaa|hitrust/i.test(text))positives.push({t:'Compliance posture (SOC 2 / HIPAA / HITRUST) reduces enterprise sales friction.', src:findSnippet(text,/soc 2|hipaa|hitrust/i)});
+  if(/patent/i.test(text))positives.push({t:'Patent / proprietary IP creates a defensible technology moat.', src:findSnippet(text,/patent/i)});
+  if(/market share|top 3/i.test(text))positives.push({t:'Demonstrated regional market-share leadership in core geographies.', src:findSnippet(text,/market share|top 3/i)});
+  if(!positives.length)positives.push({t:'Established customer base with verifiable traction identified.', src:null});
+
+  // Revenue drivers
+  const revenueDrivers=[];
+  if(n!=null&&n>110)revenueDrivers.push('Net expansion within existing accounts (NRR > 100%) is a material driver.');
+  if(tl.includes('integration'))revenueDrivers.push('Integration breadth driving enterprise stickiness and cross-sell.');
+  if(/meta|tiktok|paid acquisition/.test(tl))revenueDrivers.push('Paid social acquisition (Meta/TikTok) as primary new-user funnel.');
+  if(tl.includes('same-clinic')||tl.includes('same-store'))revenueDrivers.push('Same-site organic growth complementing acquired-unit integration.');
+  if(tl.includes('acqui'))revenueDrivers.push('Inorganic growth from recent tuck-in acquisitions.');
+  if(/international|uk|europe/.test(tl))revenueDrivers.push('International expansion contributing incremental growth.');
+  if(!revenueDrivers.length)revenueDrivers.push('Top-line drivers not fully disclosed — segment-level breakdown required.');
+
+  // Competitive position
+  const cp=[];
+  if(/patent/i.test(text))cp.push('Patent activity suggests intentional IP defensibility.');
+  if(/market share|top 3/i.test(text))cp.push('The Company has demonstrated regional market-share leadership.');
+  if(/microsoft|google|hospital systems|incumbent/i.test(text))cp.push('Competition includes well-capitalized incumbents and hyperscalers entering adjacent categories.');
+  if(/poshmark|depop|vinted|orthopedic partners|orthoone/i.test(text))cp.push('Direct competitors are visible and well-funded — differentiation must remain durable.');
+  if(!cp.length)cp.push('Competitive landscape only partially disclosed; defensibility requires deeper validation.');
+  const competitivePosition=cp.join(' ');
+
+  // Deal-type-specific questions, layered on top of universal ones
+  const lens = DEAL_LENS[dealType] || DEAL_LENS.growth_equity;
+  const universalQ=[
+    'What is the cohort-level retention curve over the trailing 24 months by sign-up vintage?',
+    'How do unit economics differ by segment, geography, and acquisition channel?',
+    'Walk us through the budget — what assumptions must hold for the plan to deliver?'
+  ];
+  const diligenceQuestions = [...lens.questions, ...universalQ];
+
+  // Next steps
+  const nextSteps=[
+    'Schedule management presentation and CFO/CEO Q&A.',
+    'Issue comprehensive VDR data request (use the Data Gaps list).',
+    'Engage a Quality-of-Earnings advisor to validate revenue recognition and add-backs.',
+    'Commission independent market sizing to validate TAM and growth assumptions.',
+    'Conduct 5–7 customer / payer reference calls (prioritize top accounts).',
+    'Review IP assignments, regulatory standing, and material contracts.',
+    'Prepare LOI / term sheet if the management presentation clears the bar.'
+  ];
+
+  // Executive summary
+  const dtLabel = DEAL_TYPE_LABELS[dealType] || dealType;
+  const arrLabel = metrics.arr ? fmtMoney(metrics.arr.raw) : (metrics.revenue ? fmtMoney(metrics.revenue.raw) : 'N/A');
+  const execParts=[
+    company+' is being evaluated for a '+dtLabel+' transaction under a '+lens.name+', emphasizing '+lens.focus+'.',
+    arrLabel!=='N/A' ? 'The revenue base of '+arrLabel+(g!=null?' is growing at '+g+'% YoY':'')+(m!=null?' on '+m+'% gross margins':'')+'.' : '',
+    n!=null ? 'Net revenue retention of '+n+'% indicates '+(n>=120?'strong':'modest')+' expansion economics.' : '',
+    derived.evEbitda ? 'The deal is marked at '+derived.evEbitda.value+'x EV/EBITDA' + (derived.leverage?' with '+derived.leverage.value+'x net leverage':'') + '.' : '',
+    risks.length ? 'Primary risk vectors include '+risks.slice(0,2).map(r=>r.t.toLowerCase().split('—')[0].split(',')[0].trim()).join(' and ')+'.' : '',
+    'Transparent, source-grounded scoring places this deal at '+score+'/100 — '+(verdict==='proceed'?'a credible candidate to advance to LOI':verdict==='caution'?'worth advancing only with targeted mitigation':'best held pending material clarification')+'.'
+  ].filter(Boolean);
+  const executiveSummary=execParts.join(' ');
+
+  const recommendation = verdict==='proceed'
+    ? 'Recommend advancing to LOI with a structured diligence workstream. Validate the data gaps below before signing, and confirm key-person and revenue-concentration risks are mitigated in the LOI structure.'
+    : verdict==='caution'
+    ? 'Recommend conditional advancement — proceed to management meetings, but withhold LOI until the identified data gaps and risk flags are clarified. Structural protections (escrow, earnouts, reps) likely required.'
+    : 'Recommend holding pending material clarification. Current information density is insufficient to support competitive bidding; revisit if revised disclosures address the gaps below.';
+
+  // Confidence: how much of the verdict is anchored in source data vs inferred?
+  const keyMetricsFound = ['arr','revenue','revenueGrowth','grossMargin','nrr','ebitda','ev'].filter(k=>metrics[k]).length;
+  const confidence = computeConfidence(keyMetricsFound, text.length, gaps.length);
+
+  return {
+    company, dealType, sector, lens:lens.name, lensFocus:lens.focus,
+    metrics, derived,
+    arrVal: arrLabel,
+    revenueGrowth: g, grossMargin: m, nrr: n,
+    ebitdaMargin: metrics.ebitdaMargin?num(metrics.ebitdaMargin.raw):null,
+    score, verdict, confidence,
+    benchmarks: buildBenchmarkRows(metrics, derived, sector),
+    executiveSummary,
+    investmentHighlights: positives,
+    revenueDrivers,
+    keyRisks: risks,
+    competitivePosition,
+    dataGaps: gaps,
+    diligenceQuestions,
+    nextSteps,
+    recommendation,
+    mode:'heuristic'
+  };
+}
+
+function computeConfidence(keyMetricsFound, textLen, gapCount){
+  let pct = 30 + keyMetricsFound*9;
+  if (textLen > 4000) pct += 8; else if (textLen < 800) pct -= 12;
+  pct -= Math.min(gapCount*2, 12);
+  pct = Math.max(15, Math.min(95, pct));
+  const band = pct>=70?'high':pct>=45?'mid':'low';
+  return { pct, band };
+}
+
+// Expose pure functions for the evaluation harness / headless testing.
+window.DiligenceEngine = { extractMetrics, deriveMetrics, computeScore, analyze, buildBenchmarkRows, computeConfidence, moneyToM };
+
+/* =========================================================================
+   AI PROVIDERS (BYO key) — heuristic engine still grounds every metric
+   ========================================================================= */
+const PROVIDERS = {
+  groq:       {name:'Groq — Llama 3.3 70B', placeholder:'gsk_...', hint:'Free at <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" style="color:var(--color-primary)">console.groq.com</a>', model:'llama-3.3-70b-versatile', endpoint:'https://api.groq.com/openai/v1/chat/completions', type:'openai'},
+  gemini:     {name:'Google Gemini 2.0 Flash', placeholder:'AIzaSy...', hint:'Free at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color:var(--color-primary)">aistudio.google.com</a>', model:'gemini-2.0-flash', endpoint:'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', type:'gemini'},
+  openrouter: {name:'OpenRouter', placeholder:'sk-or-v1-...', hint:'Free credit at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" style="color:var(--color-primary)">openrouter.ai</a>', model:'meta-llama/llama-3.3-70b-instruct', endpoint:'https://openrouter.ai/api/v1/chat/completions', type:'openai'},
+  mistral:    {name:'Mistral Small', placeholder:'...', hint:'Free tier at <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener noreferrer" style="color:var(--color-primary)">console.mistral.ai</a>', model:'mistral-small-latest', endpoint:'https://api.mistral.ai/v1/chat/completions', type:'openai'}
+};
+
+const DEAL_TYPE_LABELS = {pe_buyout:'PE Buyout / LBO',growth_equity:'Growth Equity',strategic_ma:'Strategic M&A',vc_series:'Venture Round',ipo_review:'IPO Review'};
+
+function buildPrompt(text, company, dealType){
+  const dtLabel = DEAL_TYPE_LABELS[dealType] || dealType;
+  const lens = DEAL_LENS[dealType] || DEAL_LENS.growth_equity;
+  return 'You are a senior M&A diligence analyst at a top strategy/transactions firm evaluating a '+dtLabel+' deal for "'+company+'", applying a '+lens.name+' that emphasizes '+lens.focus+'.\n\n'
+   + 'RULES:\n'
+   + '1. Ground every claim in the document. Do NOT invent numbers. If a figure is not stated, say so.\n'
+   + '2. For each risk and highlight, include a short verbatim "evidence" quote from the document (max ~140 chars).\n'
+   + '3. Be specific and quantified. Write like an investment committee memo, not marketing copy.\n\n'
+   + 'Return ONLY a valid JSON object. No markdown fences. Use these keys exactly:\n'
+   + '- arrVal: string like "$42M" or "N/A"\n'
+   + '- revenueGrowth: integer % or null\n- grossMargin: integer % or null\n- nrr: integer % or null\n- ebitdaMargin: integer % or null\n'
+   + '- score: INTEGER 0-100 (75+=strong, 55-74=caution, <55=risk)\n'
+   + '- verdict: "proceed" | "caution" | "risk"\n'
+   + '- executiveSummary: 3-5 sentence narrative\n'
+   + '- investmentHighlights: array of objects {t: string, evidence: string}\n'
+   + '- revenueDrivers: array of 3-5 strings\n'
+   + '- keyRisks: array of objects {t: string, s: "risk"|"warning"|"neutral", evidence: string}\n'
+   + '- competitivePosition: 2-4 sentence narrative\n'
+   + '- dataGaps: array of objects {t: string}\n'
+   + '- diligenceQuestions: array of 6-10 sharp questions in priority order\n'
+   + '- nextSteps: array of 5-7 concrete actions in priority sequence\n'
+   + '- recommendation: 2-3 sentence recommendation (LOI / proceed with caveats / pass)\n\n'
+   + 'DOCUMENT:\n' + text.substring(0, 24000);
+}
+
+async function callAI(text, company, dealType, sector){
+  const prov = PROVIDERS[aiProvider];
+  const prompt = buildPrompt(text, company, dealType);
+  let resp;
+  if (prov.type === 'gemini'){
+    resp = await fetch(prov.endpoint+'?key='+apiKey, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:0.1, maxOutputTokens:2200}})});
+  } else {
+    const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
+    if (aiProvider==='openrouter'){ headers['HTTP-Referer']='https://trell-j.github.io'; headers['X-Title']='DiligenceAI'; }
+    const body={model:prov.model, messages:[{role:'user', content:prompt}], temperature:0.1, max_tokens:2200};
+    if (aiProvider==='groq'||aiProvider==='openrouter') body.response_format={type:'json_object'};
+    resp = await fetch(prov.endpoint, {method:'POST', headers, body:JSON.stringify(body)});
+  }
+  if (!resp.ok){
+    const errText = await resp.text().catch(()=> '');
+    if (aiProvider==='groq' && /decommissioned|no longer supported/i.test(errText)){
+      const fb={model:'llama-3.1-8b-instant', messages:[{role:'user', content:prompt}], temperature:0.1, max_tokens:2200, response_format:{type:'json_object'}};
+      const fr = await fetch(PROVIDERS.groq.endpoint, {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey}, body:JSON.stringify(fb)});
+      if (fr.ok) resp=fr; else { const e2=await fr.text().catch(()=>''); throw new Error('Groq fallback failed ('+fr.status+'): '+e2.substring(0,200)); }
+    } else if (resp.status===429) throw new Error('Rate limit hit (429). Wait 60s or switch providers in Settings.');
+    else if (resp.status===401) throw new Error('Invalid API key (401). Check your key in Settings.');
+    else throw new Error('API error '+resp.status+': '+errText.substring(0,200));
+  }
+  const data = await resp.json();
+  let raw = prov.type==='gemini' ? (data.candidates?.[0]?.content?.parts?.[0]?.text||'') : (data.choices?.[0]?.message?.content||'');
+  raw = raw.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```[\s\S]*$/,'').trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('AI did not return valid JSON. Try again.');
+  const parsed = JSON.parse(match[0]);
+  return normalizeAI(parsed, text, company, dealType, sector);
+}
+
+// Merge AI output with the source-grounded heuristic engine. The heuristic
+// engine is the ground truth for metrics, score and benchmarks; the LLM
+// contributes richer narrative. This is the core hallucination guardrail.
+function normalizeAI(parsed, text, company, dealType, sector){
+  const base = analyze(text, company, dealType, sector);  // authoritative metrics/score
+
+  const toFinding = (x, defS) => {
+    if (typeof x === 'string') return {t:x, s:defS, src:null};
+    return {t:x.t||x.text||'', s:x.s||defS, src:x.evidence||x.src||null};
+  };
+  const ai = {
+    executiveSummary: parsed.executiveSummary || base.executiveSummary,
+    competitivePosition: parsed.competitivePosition || base.competitivePosition,
+    recommendation: parsed.recommendation || base.recommendation,
+    revenueDrivers: Array.isArray(parsed.revenueDrivers)&&parsed.revenueDrivers.length?parsed.revenueDrivers:base.revenueDrivers,
+    diligenceQuestions: Array.isArray(parsed.diligenceQuestions)&&parsed.diligenceQuestions.length?parsed.diligenceQuestions:base.diligenceQuestions,
+    nextSteps: Array.isArray(parsed.nextSteps)&&parsed.nextSteps.length?parsed.nextSteps:base.nextSteps,
+    investmentHighlights: Array.isArray(parsed.investmentHighlights)&&parsed.investmentHighlights.length?parsed.investmentHighlights.map(x=>toFinding(x,'positive')):base.investmentHighlights,
+    keyRisks: Array.isArray(parsed.keyRisks)&&parsed.keyRisks.length?parsed.keyRisks.map(x=>toFinding(x,'warning')):base.keyRisks,
+    dataGaps: Array.isArray(parsed.dataGaps)&&parsed.dataGaps.length?parsed.dataGaps.map(x=> typeof x==='string'?{t:x,src:null}:{t:x.t||x.text,src:null}):base.dataGaps
+  };
+
+  // Guardrail: verify each AI-supplied evidence quote actually exists in source.
+  const verifyEvidence = arr => arr.forEach(it=>{ if(it.src){ const probe=it.src.slice(0,40).toLowerCase(); if(probe && !text.toLowerCase().includes(probe)){ it.src=null; it.unverified=true; } } });
+  verifyEvidence(ai.investmentHighlights); verifyEvidence(ai.keyRisks);
+
+  return Object.assign(base, ai, {mode:'ai+grounded', provider:aiProvider, model:PROVIDERS[aiProvider].model});
+}
+
+/* =========================================================================
+   ANALYSIS ORCHESTRATION
+   ========================================================================= */
+async function runAnalysis(){
+  document.getElementById('docText').dataset.userEdited = document.getElementById('docText').dataset.userEdited || '';
+  const text = (docs.some(d=>d.text) ? buildCorpus(true) : document.getElementById('docText').value).trim();
+  if (!text){ const ta=document.getElementById('docText'); ta.style.borderColor='var(--color-error)'; setTimeout(()=>ta.style.borderColor='',1500); return; }
+
+  // Confidentiality gate before any external LLM call.
+  if (usingAI && !document.getElementById('consentCheck').checked){
+    showToast('Confirm authorization to send documents to an external model.');
+    document.getElementById('consentCheck').focus();
+    return;
+  }
+
+  const company = document.getElementById('companyName').value.trim() || 'Unknown Company';
+  const dealType = document.getElementById('dealType').value;
+  const sector = document.getElementById('sector').value;
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('tabBar').style.display='none';
+  document.getElementById('exportWrap').style.display='none';
+  showLoading();
+  const t0 = performance.now();
+  try {
+    let parsed;
+    if (usingAI) parsed = await callAI(text, company, dealType, sector);
+    else { await new Promise(r=>setTimeout(r,1100)); parsed = analyze(text, company, dealType, sector); }
+    result = Object.assign({company, dealType, sector}, parsed);
+    recordAudit(result, text, Math.round(performance.now()-t0));
+    document.getElementById('tabBar').style.display='';
+    document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active', i===0));
+    renderTab('overview');
+    document.getElementById('analyzeBtn').disabled=false;
+    document.getElementById('exportWrap').style.display='';
+    lucide.createIcons();
+  } catch(err){
+    document.getElementById('analyzeBtn').disabled=false;
+    document.getElementById('outputBody').innerHTML =
+      '<div class="empty-state"><div class="empty-state-icon" style="color:var(--color-error)"><i data-lucide="alert-circle"></i></div>'
+      +'<h3>'+(err.message.includes('401')?'Invalid API Key':err.message.includes('429')?'Rate Limited':'Analysis Failed')+'</h3>'
+      +'<p style="max-width:46ch;text-align:center;">'+escapeHTML(err.message)+'</p>'
+      +'<button class="btn btn-ghost" style="margin-top:var(--space-4)" onclick="openSettings()"><i data-lucide="settings"></i> Open Settings</button></div>';
+    lucide.createIcons();
+  }
+}
+
+function recordAudit(r, text, ms){
+  auditLog.push({
+    ts: new Date().toISOString(),
+    company: r.company,
+    dealType: DEAL_TYPE_LABELS[r.dealType]||r.dealType,
+    mode: r.mode,
+    provider: r.provider || '—',
+    model: r.model || 'in-browser heuristic',
+    docCount: docs.filter(d=>d.text).length || 1,
+    docHashes: docs.filter(d=>d.text).map(d=>d.hash).join(',') || quickHash(text),
+    score: r.score,
+    confidence: r.confidence ? r.confidence.pct+'%' : '—',
+    latencyMs: ms
+  });
+}
+
+function showLoading(){
+  const steps = usingAI
+    ? ['Composing source-grounded prompt…','Calling '+PROVIDERS[aiProvider].name+'…','Extracting metrics from source (ground truth)…','Cross-checking AI claims against document…','Scoring & benchmarking…','Composing memo…']
+    : ['Parsing document structure…','Extracting financial signals with citations…','Computing valuation & derived metrics…','Benchmarking against sector…','Identifying risk flags & data gaps…','Composing memo & recommendations…'];
+  document.getElementById('outputBody').innerHTML='<div class="loading-state"><div class="spinner"></div><div class="loading-steps">'+steps.map((s,i)=>'<div class="loading-step" id="ls'+i+'"><i data-lucide="circle" style="width:11px;height:11px;opacity:.3;"></i>'+s+'</div>').join('')+'</div></div>';
+  lucide.createIcons();
+  steps.forEach((_,i)=>setTimeout(()=>{const el=document.getElementById('ls'+i);if(el){el.classList.add('done');el.innerHTML='<i data-lucide="check-circle" style="width:11px;height:11px;color:var(--color-success);"></i>'+steps[i];lucide.createIcons();}},i*420+300));
+}
+
+/* =========================================================================
+   RENDER
+   ========================================================================= */
+function switchTab(btn,tab){ document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderTab(tab); }
+function goTab(name){ document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name))); renderTab(name); }
+
+let _citeId = 0;
+function findingHTML(f, cls){
+  const s = f.s || cls || 'neutral';
+  let cite = '';
+  if (f.src){ const id='c'+(_citeId++); cite = '<div class="cite"><button class="cite-toggle" onclick="document.getElementById(\''+id+'\').classList.toggle(\'open\')"><i data-lucide="quote"></i> source</button><div class="cite-body" id="'+id+'">“'+escapeHTML(f.src)+'”<span class="cite-src">— extracted from source document</span></div></div>'; }
+  else if (f.unverified){ cite = '<div class="cite"><span class="cite-src" style="color:var(--color-gold)">⚠ model claim — evidence not found verbatim in source; verify manually</span></div>'; }
+  return '<div class="finding '+s+'"><div class="finding-dot"></div><div class="finding-body"><span>'+escapeHTML(f.t)+'</span>'+cite+'</div></div>';
+}
+
+function confidenceChip(c){
+  if(!c) return '';
+  const icon = c.band==='high'?'shield-check':c.band==='mid'?'shield':'shield-alert';
+  const label = c.band==='high'?'High confidence':c.band==='mid'?'Moderate confidence':'Low confidence';
+  return '<div class="confidence-chip confidence-'+c.band+'"><i data-lucide="'+icon+'"></i>'+label+' · '+c.pct+'% · evidence-grounded</div>';
+}
+
+function renderTab(tab){
+  if(!result) return;
+  const R=result, el=document.getElementById('outputBody');
+  const highlights = R.investmentHighlights||[];
+  const risks = R.keyRisks||[];
+  const gaps = R.dataGaps||[];
+  const questions = R.diligenceQuestions||[];
+  const next = R.nextSteps||[];
+  const drivers = R.revenueDrivers||[];
+
+  if(tab==='overview'){
+    const sc=R.score>=75?'high':R.score>=55?'mid':'low';
+    const vi=R.verdict==='proceed'?'trending-up':R.verdict==='caution'?'alert-triangle':'shield-x';
+    const vl=R.verdict==='proceed'?'Proceed to LOI':R.verdict==='caution'?'Proceed with Caution':'Significant Risk — Hold';
+    const groundedDot = R.metrics ? '<span class="src-dot grounded" title="Value extracted from source document"></span>' : '';
+    el.innerHTML =
+      '<div class="summary-meta"><div class="company-name">'+escapeHTML(R.company)+'</div><div class="deal-meta">'+(DEAL_TYPE_LABELS[R.dealType]||R.dealType)+' · '+new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' · '+(R.mode==='ai+grounded'?'AI + grounded':'Heuristic engine')+'</div></div>'
+      +'<div class="lens-pill"><i data-lucide="scan-search" style="width:12px;height:12px;"></i> '+escapeHTML(R.lens||'Diligence lens')+'</div>'
+      +'<div class="verdict-card verdict-'+R.verdict+'">'
+        +'<div class="verdict-hdr"><div class="verdict-icon"><i data-lucide="'+vi+'"></i></div><div><div class="verdict-label-sm">Recommendation</div><div class="verdict-val">'+vl+'</div></div></div>'
+        +'<div class="verdict-label-sm" style="margin-bottom:var(--space-1)">Deal Strength Score</div>'
+        +'<div class="score-bar"><div class="score-fill '+sc+'" style="width:0%" id="sBar"></div></div>'
+        +'<div class="score-labels"><span>0</span><span id="sVal">0/100</span><span>100</span></div>'
+        +confidenceChip(R.confidence)
+      +'</div>'
+      +'<div class="kpi-grid">'
+        +'<div class="kpi-card"><div class="kpi-label">'+groundedDot+'ARR / Revenue</div><div class="kpi-value">'+fmtMoney(R.arrVal)+'</div>'+(R.revenueGrowth!=null?'<div class="kpi-delta positive">+'+R.revenueGrowth+'% YoY</div>':'')+'</div>'
+        +'<div class="kpi-card"><div class="kpi-label">Gross Margin</div><div class="kpi-value">'+(R.grossMargin!=null?R.grossMargin+'%':'N/A')+'</div>'+(R.grossMargin!=null?'<div class="kpi-delta '+(R.grossMargin>70?'positive':'neutral')+'">'+(R.grossMargin>70?'Above benchmark':'At benchmark')+'</div>':'')+'</div>'
+        +'<div class="kpi-card"><div class="kpi-label">NRR</div><div class="kpi-value">'+(R.nrr!=null?R.nrr+'%':'N/A')+'</div>'+(R.nrr!=null?'<div class="kpi-delta '+(R.nrr>110?'positive':'neutral')+'">'+(R.nrr>110?'Expansion revenue':'Near benchmark')+'</div>':'')+'</div>'
+      +'</div>'
+      +(R.executiveSummary?'<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="file-text"></i><span class="sec-card-title">Executive Summary</span></div><div class="sec-card-body memo-section"><p>'+escapeHTML(R.executiveSummary)+'</p></div></div>':'')
+      +'<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-success);"><i data-lucide="trending-up"></i><span class="sec-card-title">Investment Highlights</span><span class="sec-count">'+highlights.length+' identified</span></div><div class="sec-card-body">'+highlights.map(h=>findingHTML(h,'positive')).join('')+'</div></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-warning);"><i data-lucide="alert-triangle"></i><span class="sec-card-title">Risk Summary</span><span class="sec-count">'+risks.length+' flags</span></div><div class="sec-card-body">'+risks.slice(0,3).map(r=>findingHTML(r)).join('')+(risks.length>3?'<button class="sample-link" onclick="goTab(\'risk\')">View all '+risks.length+' flags →</button>':'')+'</div></div>'
+      +'<div class="ai-note"><i data-lucide="info"></i><span>Decision-support tool to accelerate triage — not a substitute for qualified M&A, legal, and financial advisors. Green dots mark figures extracted directly from the source.</span></div>';
+    lucide.createIcons();
+    setTimeout(()=>{ const bar=document.getElementById('sBar'),val=document.getElementById('sVal'); if(bar)bar.style.width=R.score+'%'; if(val){let c=0;const iv=setInterval(()=>{c+=2;if(c>=R.score){val.textContent=R.score+'/100';clearInterval(iv);}else val.textContent=c+'/100';},18);} },80);
+  }
+  else if(tab==='memo'){
+    el.innerHTML =
+      '<div class="hitl-banner"><i data-lucide="user-check"></i><span><strong>Human-in-the-loop:</strong> this is a first-pass draft. An analyst must validate every figure against source and confirm risk materiality before this memo informs an investment decision.</span></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="file-text"></i><span class="sec-card-title">Executive Summary</span></div><div class="sec-card-body memo-section"><p>'+escapeHTML(R.executiveSummary||'—')+'</p></div></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-success);"><i data-lucide="trending-up"></i><span class="sec-card-title">Investment Highlights</span></div><div class="sec-card-body">'+highlights.map(h=>findingHTML(h,'positive')).join('')+'</div></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="bar-chart-2"></i><span class="sec-card-title">Revenue Drivers</span></div><div class="sec-card-body memo-section"><div class="memo-list">'+drivers.map(d=>'<div class="memo-list-item">'+escapeHTML(d)+'</div>').join('')+'</div></div></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-error);"><i data-lucide="shield-alert"></i><span class="sec-card-title">Key Risks &amp; QoE Flags</span></div><div class="sec-card-body">'+risks.map(r=>findingHTML(r)).join('')+'</div></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="swords"></i><span class="sec-card-title">Competitive Position</span></div><div class="sec-card-body memo-section"><p>'+escapeHTML(R.competitivePosition||'—')+'</p></div></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-gold);"><i data-lucide="search-x"></i><span class="sec-card-title">Data Gaps</span></div><div class="sec-card-body">'+gaps.map(g=>'<div class="gap-item"><i data-lucide="circle-dashed"></i><span>'+escapeHTML(g.t||g)+'</span></div>').join('')+'</div></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="help-circle"></i><span class="sec-card-title">Diligence Questions</span></div><div class="sec-card-body memo-section">'+questions.map((q,i)=>'<div class="question-item"><span class="question-num">Q'+(i+1)+'</span><span>'+escapeHTML(q)+'</span></div>').join('')+'</div></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="list-checks"></i><span class="sec-card-title">Recommendation / Next Steps</span></div><div class="sec-card-body memo-section">'+(R.recommendation?'<p style="margin-bottom:var(--space-3);">'+escapeHTML(R.recommendation)+'</p>':'')+'<div class="next-steps">'+next.map((s,i)=>'<div class="next-step"><div class="step-num">'+(i+1)+'</div><span>'+escapeHTML(s)+'</span></div>').join('')+'</div></div></div>'
+      +'<div class="ai-note"><i data-lucide="info"></i><span>Use Export to download this memo as Markdown or PDF, copy to clipboard, or save the analysis locally.</span></div>';
+    lucide.createIcons();
+  }
+  else if(tab==='valuation'){
+    const d = R.derived || {};
+    const card = (obj) => obj ? '<div class="kpi-card"><div class="kpi-label">'+escapeHTML(obj.label)+'</div><div class="kpi-value">'+obj.value+obj.unit+'</div></div>' : '';
+    const anyDerived = d.evEbitda||d.evArr||d.ruleOf40||d.leverage;
+    el.innerHTML =
+      '<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="calculator"></i><span class="sec-card-title">Derived Valuation &amp; Quality Metrics</span></div><div class="sec-card-body">'
+        +(anyDerived?'<div class="kpi-grid">'+card(d.evEbitda)+card(d.evArr)+card(d.ruleOf40)+card(d.leverage)+'</div>':'<p class="memo-section">No valuation inputs (EV, EBITDA, ARR, net debt) were found in the source. Add a CIM with deal terms to compute multiples and leverage.</p>')
+        +(anyDerived?'<div style="margin-top:var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);">'+[d.evEbitda,d.evArr,d.ruleOf40,d.leverage].filter(Boolean).map(o=>'<div class="cite-body open" style="margin-top:0;">'+escapeHTML(o.label)+' → '+escapeHTML(o.src||'')+'</div>').join('')+'</div>':'')
+      +'</div></div>'
+      +'<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="bar-chart-3"></i><span class="sec-card-title">Sector Benchmarking — '+escapeHTML((R.sector||'generic').toUpperCase())+'</span></div><div class="sec-card-body"><table class="bench-table"><thead><tr><th>Metric</th><th>This deal</th><th>Benchmark</th><th>Read</th></tr></thead><tbody>'
+        +(R.benchmarks||[]).map(b=>'<tr><td>'+b.metric+'</td><td>'+b.actual+'</td><td>'+b.bench+'</td><td><span class="bench-flag '+b.flag+'">'+b.label+'</span></td></tr>').join('')
+      +'</tbody></table></div></div>'
+      +'<div class="ai-note"><i data-lucide="info"></i><span>Benchmarks are directional reference points for triage, not formal comps. Validate against a curated comp set and a Quality-of-Earnings review before pricing.</span></div>';
+    lucide.createIcons();
+  }
+  else if(tab==='risks'){
+    el.innerHTML='<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-error);"><i data-lucide="shield-alert"></i><span class="sec-card-title">All Risk Flags &amp; QoE Items</span><span class="sec-count">'+risks.length+' total</span></div><div class="sec-card-body">'+risks.map(r=>findingHTML(r)).join('')+'</div></div><div class="ai-note"><i data-lucide="info"></i><span>Risk flags surfaced from the source document with citations. Validate materiality with sector and legal specialists.</span></div>';
+    lucide.createIcons();
+  }
+  else if(tab==='gaps'){
+    el.innerHTML='<div class="sec-card"><div class="sec-card-hdr" style="color:var(--color-gold);"><i data-lucide="search-x"></i><span class="sec-card-title">Data Gaps &amp; VDR Requests</span><span class="sec-count">'+gaps.length+' gaps</span></div><div class="sec-card-body">'+gaps.map(g=>'<div class="gap-item"><i data-lucide="circle-dashed"></i><span>'+escapeHTML(g.t||g)+'</span></div>').join('')+'</div></div><div class="ai-note"><i data-lucide="info"></i><span>Use these to populate the VDR data-room request to management.</span></div>';
+    lucide.createIcons();
+  }
+  else if(tab==='questions'){
+    el.innerHTML='<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="help-circle"></i><span class="sec-card-title">Management Diligence Questions</span><span class="sec-count">'+questions.length+' questions</span></div><div class="sec-card-body">'+questions.map((q,i)=>'<div class="question-item"><span class="question-num">Q'+(i+1)+'</span><span>'+escapeHTML(q)+'</span></div>').join('')+'</div></div><div class="ai-note"><i data-lucide="info"></i><span>Front-loaded with deal-type-specific questions for the '+escapeHTML(R.lens||'lens')+'. Reorder to fit your call agenda.</span></div>';
+    lucide.createIcons();
+  }
+  else if(tab==='nextsteps'){
+    el.innerHTML=(R.recommendation?'<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="check-circle"></i><span class="sec-card-title">Recommendation</span></div><div class="sec-card-body memo-section"><p>'+escapeHTML(R.recommendation)+'</p></div></div>':'')+'<div class="sec-card"><div class="sec-card-hdr"><i data-lucide="list-checks"></i><span class="sec-card-title">Recommended Next Steps</span></div><div class="sec-card-body"><div class="next-steps">'+next.map((s,i)=>'<div class="next-step"><div class="step-num">'+(i+1)+'</div><span>'+escapeHTML(s)+'</span></div>').join('')+'</div></div></div><div class="ai-note"><i data-lucide="info"></i><span>Sequence based on deal type and risk flags. Adjust per timeline and management availability.</span></div>';
+    lucide.createIcons();
+  }
+}
+
+function escapeHTML(s){ if(s==null)return''; return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* =========================================================================
+   EXPORT: Markdown / PDF / Clipboard / Workspace / Audit
+   ========================================================================= */
+function toggleExportMenu(e){ if(e)e.stopPropagation(); document.getElementById('exportMenu').classList.toggle('open'); }
+document.addEventListener('click', e=>{ const menu=document.getElementById('exportMenu'); const wrap=document.getElementById('exportWrap'); if(menu&&wrap&&!wrap.contains(e.target)) menu.classList.remove('open'); });
+
+function buildMemoMarkdown(){
+  if(!result) return '';
+  const R=result;
+  const dtl=DEAL_TYPE_LABELS[R.dealType]||R.dealType;
+  const date=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const verdict=R.verdict==='proceed'?'Proceed to LOI':R.verdict==='caution'?'Proceed with Caution':'Significant Risk — Hold';
+  const txt = x => x&&x.t!==undefined ? x.t : x;
+  const lines=[];
+  lines.push('# Due Diligence Memo — '+R.company); lines.push('');
+  lines.push('**Deal Type:** '+dtl+'  ');
+  lines.push('**Analytical Lens:** '+(R.lens||'—')+'  ');
+  lines.push('**Date:** '+date+'  ');
+  lines.push('**Recommendation:** '+verdict+'  ');
+  lines.push('**Deal Strength Score:** '+R.score+'/100  ');
+  lines.push('**Analyst Confidence:** '+(R.confidence?R.confidence.pct+'% ('+R.confidence.band+')':'—')+'  ');
+  lines.push('**Mode:** '+(R.mode==='ai+grounded'?('AI ('+(R.model||'')+') + source-grounded engine'):'In-browser heuristic engine'));
+  lines.push('');
+  lines.push('## Key Metrics'); lines.push('');
+  lines.push('| Metric | Value |'); lines.push('|---|---|');
+  lines.push('| ARR / Revenue | '+fmtMoney(R.arrVal)+' |');
+  lines.push('| Revenue Growth (YoY) | '+(R.revenueGrowth!=null?R.revenueGrowth+'%':'N/A')+' |');
+  lines.push('| Gross Margin | '+(R.grossMargin!=null?R.grossMargin+'%':'N/A')+' |');
+  lines.push('| Net Revenue Retention | '+(R.nrr!=null?R.nrr+'%':'N/A')+' |');
+  if(R.ebitdaMargin!=null) lines.push('| EBITDA Margin | '+R.ebitdaMargin+'% |');
+  const d=R.derived||{};
+  if(d.evEbitda) lines.push('| EV / EBITDA | '+d.evEbitda.value+'x |');
+  if(d.evArr) lines.push('| EV / ARR | '+d.evArr.value+'x |');
+  if(d.ruleOf40) lines.push('| Rule of 40 | '+d.ruleOf40.value+' |');
+  if(d.leverage) lines.push('| Net Leverage | '+d.leverage.value+'x |');
+  lines.push('');
+  if(R.executiveSummary){ lines.push('## Executive Summary'); lines.push(''); lines.push(R.executiveSummary); lines.push(''); }
+  if((R.investmentHighlights||[]).length){ lines.push('## Investment Highlights'); lines.push(''); R.investmentHighlights.forEach(h=>lines.push('- '+txt(h)+(h.src?'  \n  > '+h.src:''))); lines.push(''); }
+  if((R.revenueDrivers||[]).length){ lines.push('## Revenue Drivers'); lines.push(''); R.revenueDrivers.forEach(x=>lines.push('- '+x)); lines.push(''); }
+  if((R.keyRisks||[]).length){ lines.push('## Key Risks & QoE Flags'); lines.push(''); R.keyRisks.forEach(r=>lines.push('- **['+((r.s||'neutral').toUpperCase())+']** '+txt(r)+(r.src?'  \n  > '+r.src:''))); lines.push(''); }
+  if(R.competitivePosition){ lines.push('## Competitive Position'); lines.push(''); lines.push(R.competitivePosition); lines.push(''); }
+  if((R.benchmarks||[]).length){ lines.push('## Sector Benchmarking'); lines.push(''); lines.push('| Metric | This deal | Benchmark | Read |'); lines.push('|---|---|---|---|'); R.benchmarks.forEach(b=>lines.push('| '+b.metric+' | '+b.actual+' | '+b.bench+' | '+b.label+' |')); lines.push(''); }
+  if((R.dataGaps||[]).length){ lines.push('## Data Gaps'); lines.push(''); R.dataGaps.forEach(g=>lines.push('- '+txt(g))); lines.push(''); }
+  if((R.diligenceQuestions||[]).length){ lines.push('## Diligence Questions'); lines.push(''); R.diligenceQuestions.forEach((q,i)=>lines.push((i+1)+'. '+q)); lines.push(''); }
+  lines.push('## Recommendation / Next Steps'); lines.push('');
+  if(R.recommendation){ lines.push(R.recommendation); lines.push(''); }
+  (R.nextSteps||[]).forEach((s,i)=>lines.push((i+1)+'. '+s));
+  lines.push(''); lines.push('---'); lines.push('');
+  lines.push('_Generated by DiligenceAI — an AI-assisted first-pass memo. Not a substitute for qualified M&A, legal, and financial advisors. All figures must be validated against source documents._');
+  return lines.join('\n');
+}
+
+function safeFileBase(){ const base=(result&&result.company)?result.company:'diligence-memo'; return base.replace(/[^a-z0-9\-_.]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,80)||'diligence-memo'; }
+function downloadBlob(filename, blob){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},0); }
+function showToast(msg){ const t=document.createElement('div'); t.className='toast'; t.innerHTML='<i data-lucide="check"></i><span>'+escapeHTML(msg)+'</span>'; document.body.appendChild(t); lucide.createIcons(); setTimeout(()=>t.remove(),2600); }
+
+function exportMarkdown(){ document.getElementById('exportMenu').classList.remove('open'); if(!result)return; downloadBlob(safeFileBase()+'.md', new Blob([buildMemoMarkdown()],{type:'text/markdown'})); showToast('Markdown downloaded'); }
+async function copyMarkdownToClipboard(){ document.getElementById('exportMenu').classList.remove('open'); if(!result)return; const md=buildMemoMarkdown(); try{ await navigator.clipboard.writeText(md); showToast('Copied memo to clipboard'); }catch(e){ const ta=document.createElement('textarea'); ta.value=md; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');showToast('Copied memo to clipboard');}catch(_){showToast('Copy failed — try Markdown download');} ta.remove(); } }
+
+function exportPDF(){
+  document.getElementById('exportMenu').classList.remove('open');
+  if(!result) return;
+  if(!window.jspdf||!window.jspdf.jsPDF){ showToast('PDF export unavailable — try Markdown'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'letter'});
+  const pageW=doc.internal.pageSize.getWidth(), pageH=doc.internal.pageSize.getHeight();
+  const marginX=56, marginY=56, maxW=pageW-marginX*2; let y=marginY;
+  const md=buildMemoMarkdown(); const lines=md.split('\n');
+  function ensureSpace(h){ if(y+h>pageH-marginY){ doc.addPage(); y=marginY; } }
+  function write(text,opts){ const size=opts.size||11, style=opts.style||'normal'; doc.setFont('helvetica',style); doc.setFontSize(size); doc.splitTextToSize(text,maxW).forEach(w=>{ ensureSpace(size+4); doc.text(w,marginX,y); y+=size+4; }); }
+  lines.forEach(line=>{
+    if(!line.trim()){ y+=6; return; }
+    if(line.startsWith('# ')){ y+=4; write(line.slice(2),{size:18,style:'bold'}); y+=4; return; }
+    if(line.startsWith('## ')){ y+=6; write(line.slice(3),{size:13,style:'bold'}); y+=2; return; }
+    if(line.startsWith('---')){ ensureSpace(8); doc.setDrawColor(180); doc.line(marginX,y,pageW-marginX,y); y+=10; return; }
+    if(line.startsWith('|')){ const cleaned=line.replace(/^\||\|$/g,'').split('|').map(c=>c.trim()).filter(Boolean).join('   '); if(cleaned&&!/^[-: ]+$/.test(cleaned.replace(/\s+/g,''))) write(cleaned,{size:10}); return; }
+    if(line.startsWith('> ')||/^\s*>\s/.test(line)){ write('   "'+line.replace(/^\s*>\s*/,'')+'"',{size:9,style:'italic'}); return; }
+    if(line.startsWith('- ')||/^\d+\. /.test(line)){ const clean=line.replace(/\*\*(.+?)\*\*/g,'$1'); write('• '+clean.replace(/^- /,'').replace(/^\d+\. /,''),{size:11}); return; }
+    if(line.startsWith('**')&&line.endsWith('  ')){ write(line.replace(/\*\*/g,''),{size:11,style:'bold'}); return; }
+    write(line.replace(/\*\*(.+?)\*\*/g,'$1').replace(/_(.+?)_/g,'$1'),{size:11});
+  });
+  doc.save(safeFileBase()+'.pdf'); showToast('PDF downloaded');
+}
+
+// ── Local saved workspaces (localStorage) ──────────────────────────────────
+const WS_KEY = 'diligenceai_workspaces_v1';
+function loadWorkspaces(){ try{ return JSON.parse(localStorage.getItem(WS_KEY)||'[]'); }catch(e){ return []; } }
+function saveWorkspace(){
+  document.getElementById('exportMenu').classList.remove('open');
+  if(!result){ showToast('Run an analysis first'); return; }
+  const ws=loadWorkspaces();
+  ws.unshift({ id:Date.now(), company:result.company, dealType:result.dealType, score:result.score, ts:new Date().toISOString(), result });
+  try{ localStorage.setItem(WS_KEY, JSON.stringify(ws.slice(0,25))); showToast('Analysis saved locally'); }
+  catch(e){ showToast('Could not save (storage full or blocked)'); }
+}
+function openWorkspaces(){
+  const ws=loadWorkspaces();
+  const body=document.getElementById('wsBody');
+  body.innerHTML = ws.length ? ws.map(w=>'<div class="uploaded-file" style="background:var(--color-surface-2);border-color:var(--color-border);"><i data-lucide="file-text" style="color:var(--color-primary)"></i><span class="uploaded-file-name">'+escapeHTML(w.company)+'</span><span class="uploaded-file-size">'+(DEAL_TYPE_LABELS[w.dealType]||w.dealType)+' · '+w.score+'/100 · '+new Date(w.ts).toLocaleDateString()+'</span><button class="btn btn-ghost btn-sm" onclick="restoreWorkspace('+w.id+')">Open</button><button class="btn btn-ghost btn-sm" onclick="deleteWorkspace('+w.id+')"><i data-lucide="trash-2"></i></button></div>').join('')
+    : '<p class="memo-section" style="color:var(--color-text-muted)">No saved analyses yet. Run an analysis, then Export → Save analysis (local). Saved analyses stay on this device only.</p>';
+  document.getElementById('wsModal').classList.add('open'); lucide.createIcons();
+}
+function restoreWorkspace(id){ const w=loadWorkspaces().find(x=>x.id===id); if(!w)return; result=w.result; document.getElementById('wsModal').classList.remove('open'); document.getElementById('tabBar').style.display=''; document.getElementById('exportWrap').style.display=''; document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0)); renderTab('overview'); showToast('Analysis restored'); }
+function deleteWorkspace(id){ const ws=loadWorkspaces().filter(x=>x.id!==id); localStorage.setItem(WS_KEY, JSON.stringify(ws)); openWorkspaces(); }
+
+// ── Audit log export ────────────────────────────────────────────────────────
+function exportAudit(){
+  document.getElementById('exportMenu').classList.remove('open');
+  if(!auditLog.length){ showToast('No analyses run this session yet'); return; }
+  const payload = { tool:'DiligenceAI', generatedAt:new Date().toISOString(), sessionRuns:auditLog.length, log:auditLog };
+  downloadBlob('diligenceai-audit-log.json', new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+  showToast('Audit log exported');
+}
+
+/* =========================================================================
+   EVALUATION HARNESS — runs the engine on the sample deals and checks
+   extracted metrics against known ground truth + structural completeness.
+   ========================================================================= */
+const EVAL_CASES = [
+  { key:'saas',        dealType:'growth_equity', sector:'saas',        expect:{revenueGrowth:68, grossMargin:74, nrr:118} },
+  { key:'marketplace', dealType:'vc_series',     sector:'marketplace', expect:{revenueGrowth:58, takeRate:15.5} },
+  { key:'healthcare',  dealType:'pe_buyout',     sector:'healthcare',  expect:{revenueGrowth:14, ebitdaMultiple:8.5} }
+];
+
+function runEval(){
+  const rows=[]; let passed=0, total=0;
+  EVAL_CASES.forEach(tc=>{
+    const s=SAMPLES[tc.key];
+    const r=analyze(s.text, s.company, tc.dealType, tc.sector);
+    const checks=[];
+    if(tc.expect.revenueGrowth!=null) checks.push(['revenueGrowth', r.revenueGrowth, tc.expect.revenueGrowth, r.revenueGrowth===tc.expect.revenueGrowth]);
+    if(tc.expect.grossMargin!=null) checks.push(['grossMargin', r.grossMargin, tc.expect.grossMargin, r.grossMargin===tc.expect.grossMargin]);
+    if(tc.expect.nrr!=null) checks.push(['nrr', r.nrr, tc.expect.nrr, r.nrr===tc.expect.nrr]);
+    if(tc.expect.takeRate!=null){ const tr=r.metrics.takeRate?parseFloat(r.metrics.takeRate.raw):null; checks.push(['takeRate', tr, tc.expect.takeRate, tr===tc.expect.takeRate]); }
+    if(tc.expect.ebitdaMultiple!=null){ const ev=r.derived.evEbitda?r.derived.evEbitda.value:null; checks.push(['EV/EBITDA', ev, tc.expect.ebitdaMultiple, ev===tc.expect.ebitdaMultiple]); }
+    checks.push(['risks≥3', r.keyRisks.length, '≥3', r.keyRisks.length>=3]);
+    checks.push(['questions≥6', r.diligenceQuestions.length, '≥6', r.diligenceQuestions.length>=6]);
+    checks.push(['score 0-100', r.score, '0-100', r.score>=0&&r.score<=100]);
+    checks.push(['citations present', r.keyRisks.filter(x=>x.src).length, '≥1', r.keyRisks.filter(x=>x.src).length>=1]);
+    checks.forEach(c=>{ total++; if(c[3])passed++; });
+    rows.push({ name:s.company, checks });
+  });
+  return { rows, passed, total, ok:passed===total };
+}
+
+function runEvalUI(){
+  const res=runEval();
+  const body=document.getElementById('evalBody');
+  let html='<div class="eval-summary '+(res.ok?'ok':'bad')+'"><i data-lucide="'+(res.ok?'check-circle':'alert-circle')+'" style="width:16px;height:16px;"></i> '+res.passed+' / '+res.total+' checks passed across '+res.rows.length+' sample deals</div>';
+  res.rows.forEach(r=>{
+    html+='<div class="sec-card" style="margin-bottom:var(--space-3);"><div class="sec-card-hdr"><i data-lucide="file-check-2"></i><span class="sec-card-title">'+escapeHTML(r.name)+'</span></div><div class="sec-card-body" style="padding:0;"><table class="eval-table"><thead><tr><th>Check</th><th>Got</th><th>Expected</th><th>Result</th></tr></thead><tbody>'
+      +r.checks.map(c=>'<tr><td>'+c[0]+'</td><td>'+(c[1]==null?'—':c[1])+'</td><td>'+c[2]+'</td><td class="'+(c[3]?'eval-pass':'eval-fail')+'">'+(c[3]?'PASS':'FAIL')+'</td></tr>').join('')
+      +'</tbody></table></div></div>';
+  });
+  html+='<div class="ai-note"><i data-lucide="info"></i><span>This harness runs the extraction + scoring engine against deals with known ground-truth values every time you open it — a lightweight regression test that any change to the engine must still pass.</span></div>';
+  body.innerHTML=html;
+  document.getElementById('evalModal').classList.add('open');
+  lucide.createIcons();
+}
+
+/* =========================================================================
+   SETTINGS / GOVERNANCE / MODALS
+   ========================================================================= */
+function openSettings(){ document.getElementById('settingsModal').classList.add('open'); document.getElementById('apiKeyInput').value=apiKey; setProviderUI(aiProvider); lucide.createIcons(); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function setProviderUI(p){ aiProvider=p; const prov=PROVIDERS[p]; document.getElementById('apiKeyInput').placeholder=prov.placeholder; document.getElementById('providerHint').innerHTML=prov.hint; document.querySelectorAll('.provider-btn').forEach(b=>b.classList.toggle('active', b.dataset.provider===p)); }
+function saveApiKey(){
+  apiKey=document.getElementById('apiKeyInput').value.trim();
+  usingAI=!!apiKey;
+  const badge=document.getElementById('modeBadge');
+  badge.textContent = usingAI ? ('✦ '+PROVIDERS[aiProvider].name.split(' ').slice(0,2).join(' ')) : 'Heuristic Engine';
+  document.getElementById('consentLabel').innerHTML = usingAI
+    ? 'I am authorized to send these documents to <strong>'+PROVIDERS[aiProvider].name+'</strong> for processing. <strong>Required before any external call.</strong>'
+    : 'I am authorized to process these documents. <strong>Heuristic mode runs fully in-browser — no data leaves this device.</strong>';
+  closeModal('settingsModal');
+  showToast(usingAI?'Live AI enabled — engine still grounds all metrics':'Heuristic mode (no API key)');
+}
+function toggleKeyVisibility(){ const inp=document.getElementById('apiKeyInput'), btn=document.getElementById('eyeBtn'); if(!inp||!btn)return; if(inp.type==='password'){inp.type='text';btn.innerHTML='<i data-lucide="eye-off" style="width:14px;height:14px;"></i>';}else{inp.type='password';btn.innerHTML='<i data-lucide="eye" style="width:14px;height:14px;"></i>';} lucide.createIcons(); }
+
+function openGovernance(){
+  const tbody=document.getElementById('auditBody');
+  tbody.innerHTML = auditLog.length ? auditLog.slice().reverse().map(a=>'<tr><td>'+a.ts.replace('T',' ').slice(0,19)+'</td><td>'+escapeHTML(a.company)+'</td><td>'+a.mode+'</td><td>'+escapeHTML(a.model)+'</td><td>#'+a.docHashes.slice(0,8)+'</td><td>'+a.score+'</td></tr>').join('')
+    : '<tr><td colspan="6" style="color:var(--color-text-faint)">No analyses run this session.</td></tr>';
+  document.getElementById('govModal').classList.add('open'); lucide.createIcons();
+}
+
+function resetAll(){
+  document.getElementById('docText').value=''; document.getElementById('docText').dataset.userEdited='';
+  document.getElementById('companyName').value='';
+  document.getElementById('consentCheck').checked=false;
+  docs=[]; renderDocList();
+  document.getElementById('tabBar').style.display='none';
+  document.getElementById('exportWrap').style.display='none';
+  document.getElementById('analyzeBtn').disabled=false;
+  result=null;
+  document.getElementById('outputBody').innerHTML='<div class="empty-state"><div class="empty-state-mark"><svg width="34" height="34" viewBox="0 0 32 32" fill="none"><circle cx="14" cy="14" r="7" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="14" r="2.2" fill="currentColor"/><path d="M19.5 19.5 L26 26" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M11 14.2 L13.2 16.4 L17.2 11.6" stroke="var(--color-bg)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3>Ready when you are</h3><p>Drop a CIM, deal memo, or earnings transcript — get a structured, source-grounded diligence summary in seconds.</p><div class="empty-state-hints"><div class="empty-state-hint"><i data-lucide="files"></i> Ingest multiple PDFs / DOCX with per-claim source citations</div><div class="empty-state-hint"><i data-lucide="sparkles"></i> Try a <kbd>sample deal</kbd> to see the output format</div><div class="empty-state-hint"><i data-lucide="shield-check"></i> Add an API key in Settings for live LLM analysis</div></div></div>';
+  lucide.createIcons();
+}
+
+/* =========================================================================
+   SAMPLE DEAL SCENARIOS
+   ========================================================================= */
+const SAMPLES = {
+  saas: {
+    company: 'TechCo Inc. — Growth Equity ($120M)',
+    dealType: 'growth_equity',
+    text: `CONFIDENTIAL INFORMATION MEMORANDUM
+TechCo Inc. — B2B SaaS Workflow Automation
+
+EXECUTIVE SUMMARY
+TechCo Inc. is a high-growth B2B SaaS company offering an AI-powered workflow automation platform to mid-market enterprises. The Company seeks a $120M growth equity investment to expand internationally and accelerate enterprise GTM.
+
+FINANCIAL HIGHLIGHTS
+- ARR: $42M (FY2025), up 68% YoY from $25M (FY2024)
+- Gross Margin: 74%
+- Net Revenue Retention (NRR): 118%
+- CAC Payback Period: 16 months
+- Burn Rate: $1.4M/month; 22-month runway
+- EBITDA: -$8M
+- Top 10 customers represent 38% of ARR — concentration risk noted
+
+MARKET OPPORTUNITY
+Global workflow automation market projected at $26B by 2028 (CAGR: 23%).
+
+COMPETITIVE POSITIONING
+- AutoFlow AI engine (patent pending)
+- 140+ pre-built integrations (Salesforce, SAP, Workday)
+- SOC 2 Type II, HIPAA, GDPR compliance
+- Competition: Microsoft Copilot, Google Workspace AI
+
+MANAGEMENT TEAM
+CEO: Jane Chen — ex-Salesforce VP Product, Harvard MBA
+CTO: Marcus Webb — ex-Google AI Research, holds 3 key patents (key-man risk)
+CFO: Sarah Park — Big 4, IPO experience
+
+RISKS
+- Customer concentration: top 3 = 22% of ARR
+- Sales cycle elongation in enterprise (avg 94 days Q4 2025)
+- AWS infrastructure dependency, no multi-cloud strategy
+- Key-man risk on CTO patents
+
+DATA GAPS
+- Cohort-level churn data not provided
+- Unit economics by vertical not disclosed
+- International revenue pipeline unclear`
+  },
+  marketplace: {
+    company: 'Loomly Marketplace — Series C ($85M)',
+    dealType: 'vc_series',
+    text: `CONFIDENTIAL INVESTOR MEMO
+Loomly — Consumer Peer-to-Peer Resale Marketplace
+
+EXECUTIVE SUMMARY
+Loomly operates a mobile-first peer-to-peer resale marketplace for premium fashion, with 4.2M monthly active users across the US and UK. The Company is raising an $85M Series C to fund category expansion and accelerate paid acquisition.
+
+FINANCIAL HIGHLIGHTS
+- GMV: $310M (TTM), up 52% YoY from $204M
+- Net Revenue: $48M (take rate ~15.5%), up 58% YoY
+- Gross Margin: 68%
+- Contribution margin per order: $4.20 (vs. $2.10 prior year)
+- Burn Rate: $2.6M/month; 14-month runway pre-raise
+- Buyer cohort repeat rate: 47% within 90 days
+- CAC: $22; LTV: $96 (LTV/CAC = 4.4x)
+
+MARKET OPPORTUNITY
+Global secondhand apparel market projected at $350B by 2028 (CAGR: 12%). Resale outpacing broader apparel growth by ~5x.
+
+COMPETITIVE POSITIONING
+- Differentiated AI-driven listing tool (avg listing time 38 seconds vs. 4+ minutes for competitors)
+- 92% seller satisfaction (vs. 71% category average)
+- Competition: Poshmark, Depop, Vinted (well-capitalized incumbents)
+- No defensible IP filed to date
+
+MANAGEMENT TEAM
+CEO: Priya Raman — founder, ex-Instacart product lead
+COO: David Kim — ex-Uber Eats ops, 8 yrs marketplace scaling
+CFO position currently vacant — interim from advisory firm
+
+RISKS
+- Heavy paid acquisition reliance (Meta + TikTok) — CAC inflation risk
+- Marketplace liquidity concentrated in 3 US metros (NYC, LA, SF = 61% of GMV)
+- Trust & safety: counterfeit dispute rate climbing (1.8% Q3, 2.4% Q4)
+- Take rate compression risk as larger competitors push lower fees
+
+DATA GAPS
+- Cohort retention beyond 12 months not provided
+- True contribution margin including returns processing not validated
+- International unit economics (UK launch) not separately disclosed`
+  },
+  healthcare: {
+    company: 'Meridian Health Partners — PE Buyout ($240M EV)',
+    dealType: 'pe_buyout',
+    text: `CONFIDENTIAL INFORMATION MEMORANDUM
+Meridian Health Partners — Multi-Site Outpatient Specialty Services
+
+EXECUTIVE SUMMARY
+Meridian Health Partners operates 38 outpatient orthopedic and sports-medicine clinics across the Southeast US, serving ~420,000 patient visits annually. The Company is being marketed for a $240M EV LBO transaction (8.5x trailing EBITDA).
+
+FINANCIAL HIGHLIGHTS
+- Revenue: $186M (FY2025), up 14% YoY from $163M
+- EBITDA: $28.2M (15.2% margin), up from $22M
+- Gross Margin: 41% (mature healthcare services range)
+- Same-clinic revenue growth: 6.8%
+- Net debt: $42M; proposed leverage 5.5x at close
+- Payer mix: 62% commercial, 28% Medicare, 10% self-pay
+
+MARKET OPPORTUNITY
+US outpatient orthopedic services projected at $58B by 2027 (CAGR: 6%). Aging demographic and shift from inpatient driving structural tailwind.
+
+COMPETITIVE POSITIONING
+- Top 3 market share in 6 of 9 MSAs served
+- Proprietary scheduling and revenue-cycle platform (in-house)
+- HIPAA and HITRUST CSF certified
+- Competition: hospital systems acquiring physician practices; PE-backed roll-ups (US Orthopedic Partners, OrthoOne)
+
+MANAGEMENT TEAM
+CEO: Dr. Robert Hayes, MD — founder, 22 yrs clinical + operating
+CFO: Lisa Tran — ex-HCA divisional CFO
+Chief Medical Officer: Dr. Anika Patel — board-certified, joined 2023
+
+RISKS
+- Reimbursement risk: CMS proposed 2026 rate cuts to specialty services (~3-5%)
+- Physician retention: 4 senior partners eligible to retire within 36 months
+- Reliance on 2 commercial payers for 41% of revenue — contract renewal cycle 2026
+- Integration risk on 6 recently acquired clinics (closed last 18 months)
+- Regulatory: state-level Certificate of Need restrictions in 3 markets
+
+DATA GAPS
+- De-identified patient cohort outcomes data not provided
+- Same-store unit economics by clinic vintage not disclosed
+- Detailed payer-contract terms (rate cards) withheld pending NDA upgrade
+- Quality-of-earnings adjustments to EBITDA not yet validated`
+  }
+};
+
+function loadSample(key){
+  key=key||'saas'; const s=SAMPLES[key]; if(!s)return;
+  docs=[]; renderDocList();
+  const ta=document.getElementById('docText'); ta.value=s.text; ta.dataset.userEdited='1';
+  document.getElementById('companyName').value=s.company;
+  const dt=document.getElementById('dealType'); dt.value=s.dealType; dt.dataset.userSet='1';
+  const secSel=document.getElementById('sector'); secSel.value=(key==='healthcare'?'healthcare':key==='marketplace'?'marketplace':'saas'); secSel.dataset.userSet='1';
+  document.querySelectorAll('.focus-tag').forEach(t=>t.classList.add('selected'));
+  showToast('Sample loaded — click Run Due Diligence Analysis');
+  lucide.createIcons();
+}
+
+setProviderUI('groq');
+lucide.createIcons();
+</script>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-hdr">
+      <div><div style="font-size:var(--text-base);font-weight:700;">AI Provider Settings</div><div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Bring your own key. Optional — the heuristic engine works without one.</div></div>
+      <button class="modal-x" onclick="closeModal('settingsModal')" aria-label="Close"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+    </div>
+    <div style="margin-bottom:var(--space-5);">
+      <div style="font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:var(--space-2);">Choose Provider</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);">
+        <button class="provider-btn active" data-provider="groq" onclick="setProviderUI('groq')" style="padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);border:1px solid var(--color-border);font-size:var(--text-xs);font-weight:600;text-align:left;cursor:pointer;background:none;"><div style="font-size:10px;color:var(--color-text-muted);margin-bottom:2px;">RECOMMENDED · FREE</div>🟢 Groq</button>
+        <button class="provider-btn" data-provider="gemini" onclick="setProviderUI('gemini')" style="padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);border:1px solid var(--color-border);font-size:var(--text-xs);font-weight:600;text-align:left;cursor:pointer;background:none;"><div style="font-size:10px;color:var(--color-text-muted);margin-bottom:2px;">GOOGLE · FREE</div>🔵 Gemini</button>
+        <button class="provider-btn" data-provider="openrouter" onclick="setProviderUI('openrouter')" style="padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);border:1px solid var(--color-border);font-size:var(--text-xs);font-weight:600;text-align:left;cursor:pointer;background:none;"><div style="font-size:10px;color:var(--color-text-muted);margin-bottom:2px;">MULTI-MODEL</div>🟣 OpenRouter</button>
+        <button class="provider-btn" data-provider="mistral" onclick="setProviderUI('mistral')" style="padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);border:1px solid var(--color-border);font-size:var(--text-xs);font-weight:600;text-align:left;cursor:pointer;background:none;"><div style="font-size:10px;color:var(--color-text-muted);margin-bottom:2px;">MISTRAL AI</div>🟡 Mistral</button>
+      </div>
+    </div>
+    <div style="padding:var(--space-3) var(--space-4);background:var(--color-primary-highlight);border-radius:var(--radius-md);display:flex;gap:var(--space-2);margin-bottom:var(--space-5);"><i data-lucide="shield-check" style="width:13px;height:13px;color:var(--color-primary);flex-shrink:0;margin-top:1px;"></i><span style="font-size:var(--text-xs);color:var(--color-primary);">Your key stays in browser memory only — never logged or proxied. Even with AI on, financial metrics are re-extracted from source as ground truth.</span></div>
+    <div class="form-group" style="margin-bottom:var(--space-5);">
+      <label class="form-label" for="apiKeyInput">API Key</label>
+      <div style="position:relative;"><input class="form-input" id="apiKeyInput" type="password" placeholder="gsk_..." style="padding-right:44px;font-family:monospace;font-size:var(--text-xs);" autocomplete="off"/><button onclick="toggleKeyVisibility()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--color-text-muted);display:flex;background:none;border:none;cursor:pointer;" id="eyeBtn" aria-label="Toggle key visibility"><i data-lucide="eye" style="width:14px;height:14px;"></i></button></div>
+      <span style="font-size:var(--text-xs);color:var(--color-text-muted);" id="providerHint">Free at <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" style="color:var(--color-primary)">console.groq.com</a></span>
+    </div>
+    <div style="display:flex;gap:var(--space-3);"><button onclick="closeModal('settingsModal')" class="btn btn-ghost" style="flex:1;justify-content:center;">Cancel</button><button onclick="saveApiKey()" style="flex:2;padding:var(--space-3);background:var(--color-primary);color:var(--color-text-inverse);border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;display:flex;align-items:center;justify-content:center;gap:var(--space-2);cursor:pointer;"><i data-lucide="save" style="width:14px;height:14px;"></i> Save &amp; Connect</button></div>
+  </div>
+</div>
+
+<!-- Governance Modal -->
+<div id="govModal" class="modal">
+  <div class="modal-card wide">
+    <div class="modal-hdr">
+      <div><div style="font-size:var(--text-base);font-weight:700;">Responsible-AI &amp; Governance</div><div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">How this tool handles data, risk, and accountability</div></div>
+      <button class="modal-x" onclick="closeModal('govModal')" aria-label="Close"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+    </div>
+    <div class="gov-grid">
+      <div class="gov-cell"><h5><i data-lucide="scale"></i> EU AI Act posture</h5><p>A diligence summarizer is a <strong>limited-risk</strong> system: its obligation is transparency. The UI labels all output as AI-assisted, marks model claims that lack verbatim evidence, and keeps a human in the loop. It is not used for prohibited or high-risk purposes (e.g. credit scoring of individuals).</p></div>
+      <div class="gov-cell"><h5><i data-lucide="lock"></i> Data protection (GDPR)</h5><p>Heuristic mode processes documents <strong>entirely in-browser</strong> — no upload, no server, no retention. With a BYO API key, only the prompt + extracted text are sent to the provider you choose, after an explicit authorization checkbox. No personal data is stored by the app.</p></div>
+      <div class="gov-cell"><h5><i data-lucide="globe"></i> Data residency &amp; confidentiality</h5><p>No backend means no third-party data custody by default. A confidentiality gate blocks any external model call until the analyst confirms authorization — the control point for NDA / data-room material.</p></div>
+      <div class="gov-cell"><h5><i data-lucide="git-compare"></i> Hallucination guardrails</h5><p>Financial metrics, scores and benchmarks are computed deterministically from the source — never taken from the model. Each model-supplied evidence quote is verified to exist verbatim in the document; unverifiable claims are flagged for manual review.</p></div>
+    </div>
+    <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-bottom:var(--space-2);display:flex;align-items:center;gap:6px;"><i data-lucide="scroll-text" style="width:13px;height:13px;color:var(--color-primary)"></i> Session audit trail</div>
+    <div style="overflow-x:auto;border:1px solid var(--color-border);border-radius:var(--radius-md);"><table class="audit-table"><thead><tr><th>Timestamp (UTC)</th><th>Company</th><th>Mode</th><th>Model</th><th>Doc hash</th><th>Score</th></tr></thead><tbody id="auditBody"></tbody></table></div>
+    <div style="display:flex;gap:var(--space-3);margin-top:var(--space-5);"><button onclick="closeModal('govModal')" class="btn btn-ghost" style="flex:1;justify-content:center;">Close</button><button onclick="exportAudit()" style="flex:1;padding:var(--space-3);background:var(--color-primary);color:var(--color-text-inverse);border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;display:flex;align-items:center;justify-content:center;gap:var(--space-2);cursor:pointer;"><i data-lucide="download" style="width:14px;height:14px;"></i> Export audit log</button></div>
+  </div>
+</div>
+
+<!-- Evaluation Modal -->
+<div id="evalModal" class="modal">
+  <div class="modal-card wide">
+    <div class="modal-hdr">
+      <div><div style="font-size:var(--text-base);font-weight:700;">Evaluation Harness</div><div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Regression tests on known-answer sample deals</div></div>
+      <button class="modal-x" onclick="closeModal('evalModal')" aria-label="Close"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+    </div>
+    <div id="evalBody"></div>
+  </div>
+</div>
+
+<!-- Saved Analyses Modal -->
+<div id="wsModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-hdr">
+      <div><div style="font-size:var(--text-base);font-weight:700;">Saved Analyses</div><div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Stored locally on this device only</div></div>
+      <button class="modal-x" onclick="closeModal('wsModal')" aria-label="Close"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+    </div>
+    <div id="wsBody" style="display:flex;flex-direction:column;gap:var(--space-2);"></div>
+  </div>
+</div>
+
+</body>
+</html>
