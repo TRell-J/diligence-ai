@@ -1,0 +1,7 @@
+# .obvious/config.yml — repo policy for Obvious agents
+# Repo: TRell-J/diligence-ai — values auto-detected from GitHub repo settings (2026-09-03).
+
+repo: TRell-J/diligence-ai
+defaultBranch: main            # from GitHub defaultBranchRef
+mergeMethod: squash            # GitHub allows merge, rebase AND squash here; squash selected for clean history. TODO(confirm): owner preference not expressed in repo settings.
+deleteBranchOnMerge: false     # from GitHub repo settings
